@@ -46,12 +46,12 @@ public class PlayerStatisticService implements IPlayerStatisticService {
     @Override
     public List<PlayerStatisticDTO> search(String search) {
         if (search != null && search.startsWith("match:")) {
-            /*Long matchId = Long.parseLong(search.split(":")[1]);
+            Long matchId = Long.parseLong(search.split(":")[1]);
             log.info("Searching players by {}...", search);
-            return playerStatisticRepository.findByMatchId(matchId)
+            return playerStatisticRepository.findByPlayerMatch_Match_IdOrderByTimestampDesc(matchId)
                     .stream()
                     .map(playerStatisticMapper::toDTO)
-                    .collect(Collectors.toList());*/
+                    .collect(Collectors.toList());
         }
         log.info("Searching all players...");
         return playerStatisticRepository.findAll()
