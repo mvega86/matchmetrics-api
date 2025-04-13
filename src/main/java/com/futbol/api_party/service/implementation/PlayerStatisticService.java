@@ -48,7 +48,7 @@ public class PlayerStatisticService implements IPlayerStatisticService {
         if (search != null && search.startsWith("match:")) {
             Long matchId = Long.parseLong(search.split(":")[1]);
             log.info("Searching players by {}...", search);
-            return playerStatisticRepository.findByPlayerMatch_Match_IdOrderByTimestampDesc(matchId)
+            return playerStatisticRepository.findByPlayerMatch_Match_IdOrderByCreatedAtDesc(matchId)
                     .stream()
                     .map(playerStatisticMapper::toDTO)
                     .collect(Collectors.toList());

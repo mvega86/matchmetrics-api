@@ -126,9 +126,9 @@ public class MatchService implements IMatchService {
     public void delete(Long id) {
         log.info("Searching match with id {} to delete...", id);
         Match match = matchRepository.findById(id)
-                .orElseThrow(() -> {
-                    log.error("Team with ID {} not found", id);
-                    return new EntityNotFoundException("Match with ID " + id + " was not found.");
+            .orElseThrow(() -> {
+                log.error("Team with ID {} not found", id);
+                return new EntityNotFoundException("Match with ID " + id + " was not found.");
 
                 });
         /*PlayerMatch playerMatch = playerMatchRepository.findById(id)
@@ -137,8 +137,12 @@ public class MatchService implements IMatchService {
         if (!playerMatch.getPlayerStatistics().isEmpty()) {
             throw new IllegalStateException("Cannot delete PlayerMatch with associated statistics");
         }*/
-        matchRepository.deleteById(id);
-        log.info("Match {} delete successfully.", match.getHomeTeam().getAcronym()+" VS "+match.getAwayTeam().getAcronym());
+        try {
+            matchRepository.deleteById(id);
+            log.info("Match {} delete successfully.", match.getHomeTeam().getAcronym() + " VS " + match.getAwayTeam().getAcronym());
+        }catch (Exception error){
+            log.error("Error to try to remove a Match:", error);
+        }
     }
 }
 

@@ -83,10 +83,10 @@ public class PlayerMatchService implements IPlayerMatchService {
 
     @Override
     public PlayerMatchDTO getById(Long id) {
-        log.info("Searching match with id {}...", id);
+        log.info("Searching player match with id {}...", id);
         PlayerMatch playerMatch = playerMatchRepository.findById(id)
                 .orElseThrow(() -> {
-                    log.error("Player, with id {}, not found.", id);
+                    log.error("PlayerMatch, with id {}, not found.", id);
                     return new EntityNotFoundException("PlayerMatch not found");
                 });
         return playerMatchMapper.toDTO(playerMatch);

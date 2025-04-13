@@ -30,7 +30,9 @@ public class PlayerStatistic extends AuditModel {
     @Column(nullable = false)
     private LocalDateTime timestamp;
 
+    @Column(name = "position_x")
     private Double positionX;
+    @Column(name = "position_y")
     private Double positionY;
 
     @Column(length = 255)
