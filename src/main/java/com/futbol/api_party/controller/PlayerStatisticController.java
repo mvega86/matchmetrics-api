@@ -16,20 +16,16 @@ import java.util.Map;
 @RequestMapping("/api/v1/player-statistics")
 @Slf4j
 public class PlayerStatisticController {
-
     private final IPlayerStatisticService playerStatisticService;
-
     public PlayerStatisticController(IPlayerStatisticService playerStatisticService) {
         this.playerStatisticService = playerStatisticService;
     }
-
     @GetMapping
     public ResponseEntity<List<PlayerStatisticDTO>> getAll(@RequestParam(value = "search", required = false) String search) {
         log.info("Logger: Request to get all players statistics with search: {}", search);
         List<PlayerStatisticDTO> playerStatisticDTOList = playerStatisticService.search(search);
         return ResponseEntity.ok(playerStatisticDTOList);
     }
-
     @PostMapping
     public ResponseEntity<Map<String, Object>> createPlayerStatistics(@Valid @RequestBody PlayerStatisticDTO playerStatisticDTO) {
         log.info("Assigning statistics to players with ID: {}", playerStatisticDTO.getId());
@@ -41,18 +37,22 @@ public class PlayerStatisticController {
 
         return ResponseEntity.ok(response);
     }
-
     @GetMapping("/{playerMatchId}")
     public List<PlayerStatisticDTO> getStatisticsByPlayerMatch(@PathVariable Long playerMatchId) {
         log.info("Request to fetch statistics for player match ID: {}", playerMatchId);
         return playerStatisticService.getStatisticsByPlayerMatch(playerMatchId);
     }
-
     @PutMapping
     public ResponseEntity<PlayerStatisticDTO> updateStatistic(@RequestBody PlayerStatisticDTO dto) {
         log.info("Request to fetch statistics for player match ID: {}", dto.getId());
         PlayerStatisticDTO updated = playerStatisticService.update(dto);
         return ResponseEntity.ok(updated);
+    }
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        log.debug("Request received to delete player statistic with ID: {}", id);
+        playerStatisticService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }
 

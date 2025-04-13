@@ -6,6 +6,7 @@ import com.futbol.api_party.mapper.StatisticMapper;
 import com.futbol.api_party.mapper.dto.PlayerMatchDTO;
 import com.futbol.api_party.mapper.dto.PlayerStatisticDTO;
 import com.futbol.api_party.mapper.PlayerStatisticMapper;
+import com.futbol.api_party.persistence.entity.Match;
 import com.futbol.api_party.persistence.entity.PlayerStatistic;
 import com.futbol.api_party.persistence.entity.PlayerMatch;
 import com.futbol.api_party.persistence.entity.Statistic;
@@ -121,6 +122,23 @@ public class PlayerStatisticService implements IPlayerStatisticService {
         PlayerStatistic saved = playerStatisticRepository.save(updated);
         log.info("Logging: Done.");
         return playerStatisticMapper.toDTO(saved);
+    }
+
+    @Override
+    public void delete(Long id) {
+        log.info("Searching match with id {} to delete...", id);
+        PlayerStatistic playerStatistic = playerStatisticRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.error("Player statistic with ID {} not found", id);
+                    return new EntityNotFoundException("Player statistic with ID " + id + " was not found.");
+
+                });
+        try {
+            playerStatisticRepository.deleteById(id);
+            log.info("Player statistic with id {} delete successfully.", playerStatistic.getId());
+        }catch (Exception error){
+            log.error("Error to try to remove a player statistic:", error);
+        }
     }
 }
 
