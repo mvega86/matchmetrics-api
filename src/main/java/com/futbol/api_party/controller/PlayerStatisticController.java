@@ -37,11 +37,6 @@ public class PlayerStatisticController {
 
         return ResponseEntity.ok(response);
     }
-    @GetMapping("/{playerMatchId}")
-    public List<PlayerStatisticDTO> getStatisticsByPlayerMatch(@PathVariable Long playerMatchId) {
-        log.info("Request to fetch statistics for player match ID: {}", playerMatchId);
-        return playerStatisticService.getStatisticsByPlayerMatch(playerMatchId);
-    }
     @PutMapping
     public ResponseEntity<PlayerStatisticDTO> updateStatistic(@RequestBody PlayerStatisticDTO dto) {
         log.info("Request to fetch statistics for player match ID: {}", dto.getId());

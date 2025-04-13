@@ -20,6 +20,7 @@ public class PlayerStatisticMapper {
 
     public PlayerStatistic toEntity(PlayerStatisticDTO dto, PlayerMatch playerMatch, Statistic statistic) {
         PlayerStatistic playerStatistic = new PlayerStatistic();
+        playerStatistic.setId(dto.getId());
         playerStatistic.setPlayerMatch(playerMatch);
         playerStatistic.setStatistic(statistic);
         playerStatistic.setTimestamp(dto.getTimestamp());
