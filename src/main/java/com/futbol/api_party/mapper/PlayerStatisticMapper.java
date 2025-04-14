@@ -1,6 +1,7 @@
 package com.futbol.api_party.mapper;
 
 import com.futbol.api_party.mapper.dto.PlayerStatisticDTO;
+import com.futbol.api_party.persistence.entity.FieldZone;
 import com.futbol.api_party.persistence.entity.PlayerStatistic;
 import com.futbol.api_party.persistence.entity.PlayerMatch;
 import com.futbol.api_party.persistence.entity.Statistic;
@@ -12,13 +13,15 @@ public class PlayerStatisticMapper {
 
     private final StatisticMapper statisticMapper;
     private final PlayerMatchMapper playerMatchMapper;
+    private final FieldZoneMapper fieldZoneMapper;
 
-    public PlayerStatisticMapper(StatisticMapper statisticMapper, PlayerMatchMapper playerMatchMapper) {
+    public PlayerStatisticMapper(StatisticMapper statisticMapper, PlayerMatchMapper playerMatchMapper, FieldZoneMapper fieldZoneMapper) {
         this.statisticMapper = statisticMapper;
         this.playerMatchMapper = playerMatchMapper;
+        this.fieldZoneMapper = fieldZoneMapper;
     }
 
-    public PlayerStatistic toEntity(PlayerStatisticDTO dto, PlayerMatch playerMatch, Statistic statistic) {
+    public PlayerStatistic toEntity(PlayerStatisticDTO dto, PlayerMatch playerMatch, Statistic statistic, FieldZone fieldZone) {
         PlayerStatistic playerStatistic = new PlayerStatistic();
         playerStatistic.setId(dto.getId());
         playerStatistic.setPlayerMatch(playerMatch);
@@ -27,6 +30,7 @@ public class PlayerStatisticMapper {
         playerStatistic.setPositionX(dto.getPositionX());
         playerStatistic.setPositionY(dto.getPositionY());
         playerStatistic.setObservation(dto.getObservation());
+        playerStatistic.setFieldZone(fieldZone);
         return playerStatistic;
     }
 
@@ -39,7 +43,7 @@ public class PlayerStatisticMapper {
         dto.setPositionX(playerStatistic.getPositionX());
         dto.setPositionY(playerStatistic.getPositionY());
         dto.setObservation(playerStatistic.getObservation());
-
+        dto.setFieldZone(playerStatistic.getFieldZone()!=null?fieldZoneMapper.toDTO(playerStatistic.getFieldZone()):null);
         // Calculate relative minute for display only in API
         dto.setRelativeMinuteFormatted(MatchTimeUtil.calculateRelativeMinuteFormatted(playerStatistic.getPlayerMatch().getMatch(), playerStatistic.getTimestamp()));
 

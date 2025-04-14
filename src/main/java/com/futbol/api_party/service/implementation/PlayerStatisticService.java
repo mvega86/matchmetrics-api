@@ -6,10 +6,8 @@ import com.futbol.api_party.mapper.StatisticMapper;
 import com.futbol.api_party.mapper.dto.PlayerMatchDTO;
 import com.futbol.api_party.mapper.dto.PlayerStatisticDTO;
 import com.futbol.api_party.mapper.PlayerStatisticMapper;
-import com.futbol.api_party.persistence.entity.Match;
-import com.futbol.api_party.persistence.entity.PlayerStatistic;
-import com.futbol.api_party.persistence.entity.PlayerMatch;
-import com.futbol.api_party.persistence.entity.Statistic;
+import com.futbol.api_party.persistence.entity.*;
+import com.futbol.api_party.persistence.repository.FieldZoneRepository;
 import com.futbol.api_party.persistence.repository.PlayerStatisticRepository;
 import com.futbol.api_party.persistence.repository.PlayerMatchRepository;
 import com.futbol.api_party.persistence.repository.StatisticRepository;
@@ -31,17 +29,19 @@ public class PlayerStatisticService implements IPlayerStatisticService {
     private final PlayerMatchMapper playerMatchMapper;
     private final StatisticMapper statisticMapper;
     private final StatisticRepository statisticRepository;
+    private final FieldZoneRepository fieldZoneRepository;
 
     public PlayerStatisticService(PlayerStatisticRepository playerStatisticRepository,
                                   PlayerMatchRepository playerMatchRepository,
                                   PlayerStatisticMapper playerStatisticMapper, PlayerMatchMapper playerMatchMapper, StatisticMapper statisticMapper,
-                                  StatisticRepository statisticRepository) {
+                                  StatisticRepository statisticRepository, FieldZoneRepository fieldZoneRepository) {
         this.playerStatisticRepository = playerStatisticRepository;
         this.playerMatchRepository = playerMatchRepository;
         this.playerStatisticMapper = playerStatisticMapper;
         this.playerMatchMapper = playerMatchMapper;
         this.statisticMapper = statisticMapper;
         this.statisticRepository = statisticRepository;
+        this.fieldZoneRepository = fieldZoneRepository;
     }
 
     @Override
@@ -74,10 +74,17 @@ public class PlayerStatisticService implements IPlayerStatisticService {
         Statistic statistic = statisticRepository.findById(playerStatisticDTO.getStatistic().getId())
                 .orElseThrow(() -> new EntityNotFoundException("Statistic not found"));
 
-
+        log.info("Logging: Field zone searching...");
+        FieldZone zone = null;
+        if (playerStatisticDTO.getPositionX() != null && playerStatisticDTO.getPositionY() != null) {
+            zone = fieldZoneRepository.findByPosition(
+                    playerStatisticDTO.getPositionX(), playerStatisticDTO.getPositionY()
+            );
+        }
+        log.info("Logging: Done.");
 
         try {
-            PlayerStatistic playerStatistic = playerStatisticMapper.toEntity(playerStatisticDTO, playerMatch, statistic);
+            PlayerStatistic playerStatistic = playerStatisticMapper.toEntity(playerStatisticDTO, playerMatch, statistic, zone);
             playerStatistic = playerStatisticRepository.save(playerStatistic);
             return playerStatisticMapper.toDTO(playerStatistic);
         }catch (Exception e){
@@ -117,8 +124,16 @@ public class PlayerStatisticService implements IPlayerStatisticService {
                     return new EntityNotFoundException("Statistic not found");
                 });
         log.info("Logging: Done.");
+        log.info("Logging: Field zone searching...");
+        FieldZone zone = null;
+        if (playerStatisticDTO.getPositionX() != null && playerStatisticDTO.getPositionY() != null) {
+            zone = fieldZoneRepository.findByPosition(
+                    playerStatisticDTO.getPositionX(), playerStatisticDTO.getPositionY()
+            );
+        }
+        log.info("Logging: Done.");
         log.info("Logging: Updating...");
-        PlayerStatistic updated = playerStatisticMapper.toEntity(playerStatisticDTO, playerMatch, statistic);
+        PlayerStatistic updated = playerStatisticMapper.toEntity(playerStatisticDTO, playerMatch, statistic, zone);
         PlayerStatistic saved = playerStatisticRepository.save(updated);
         log.info("Logging: Done.");
         return playerStatisticMapper.toDTO(saved);

@@ -37,5 +37,9 @@ public class PlayerStatistic extends AuditModel {
 
     @Column(length = 255)
     private String observation;
+
+    @ManyToOne
+    @JoinColumn(name = "field_zone_id")
+    private FieldZone fieldZone;
 }
 

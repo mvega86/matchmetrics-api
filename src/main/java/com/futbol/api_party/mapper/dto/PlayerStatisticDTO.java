@@ -27,6 +27,7 @@ public class PlayerStatisticDTO {
     private Double positionX;
     private Double positionY;
     private String observation;
+    private FieldZoneDTO fieldZone;
 
     private String relativeMinuteFormatted; //Relative minute the statistic occurred
 }
