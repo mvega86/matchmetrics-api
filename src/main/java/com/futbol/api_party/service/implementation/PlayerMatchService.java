@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -57,29 +58,39 @@ public class PlayerMatchService implements IPlayerMatchService {
 
     @Override
     @Transactional
-    public PlayerMatchDTO assignPlayerToMatch(PlayerMatchDTO playerMatchDTO) {
+    public PlayerMatchDTO save(PlayerMatchDTO playerMatchDTO) {
         log.info("Assigning player to match...");
-        matchRepository.findById(playerMatchDTO.getMatch().getId())
-                .orElseThrow(() -> {
-                    log.error("Match, with id {}, not found.", playerMatchDTO.getMatch().getId());
-                    return new EntityNotFoundException("Match not found");
-                });
-        Player player = playerRepository.findById(playerMatchDTO.getPlayer().getId())
-                .orElseThrow(() -> {
-                    log.error("Player match, with id {}, not found.", playerMatchDTO.getPlayer().getId());
-                    return new EntityNotFoundException("Player not found");
-                });
+
+        Long matchId = playerMatchDTO.getMatch().getId();
+        Long playerId = playerMatchDTO.getPlayer().getId();
+
+        matchRepository.findById(matchId).orElseThrow(() -> {
+            log.error("Match with id {} not found.", matchId);
+            return new EntityNotFoundException("Match not found");
+        });
+
+        Player player = playerRepository.findById(playerId).orElseThrow(() -> {
+            log.error("Player with id {} not found.", playerId);
+            return new EntityNotFoundException("Player not found");
+        });
+
+        Optional<PlayerMatch> existing = playerMatchRepository.findByMatchIdAndPlayerId(matchId, playerId);
+        if (existing.isPresent()) {
+            log.error("Player {} is already assigned to match {}", playerId, matchId);
+            throw new RuntimeException("Player is already assigned to this match.");
+        }
 
         try {
             PlayerMatch playerMatch = playerMatchMapper.toEntity(playerMatchDTO, player.getTeam());
             playerMatch = playerMatchRepository.save(playerMatch);
-            log.info("Player match assigned successfully");
+            log.info("Player match created successfully.");
             return playerMatchMapper.toDTO(playerMatch);
-        }catch (Exception e){
+        } catch (Exception e) {
             log.error("Error assigning player to match: {}", e.getMessage());
             throw new RuntimeException("Error assigning player to match.");
         }
     }
+
 
     @Override
     public PlayerMatchDTO getById(Long id) {

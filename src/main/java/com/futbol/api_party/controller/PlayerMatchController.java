@@ -33,22 +33,18 @@ public class PlayerMatchController {
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, Object>> assignPlayersToMatch(@Valid @RequestBody List<PlayerMatchDTO> playerMatchDTOs) {
-        log.info("Logger: Assigning {} players to matches", playerMatchDTOs.size());
-
-        List<PlayerMatchDTO> playerMatchDTOList  = playerMatchDTOs.stream()
-                .map(dto -> {
-                    log.info("Logger: Assigning player {} to match {}", dto.getPlayer().getId(), dto.getMatch().getId());
-                    return playerMatchService.assignPlayerToMatch(dto);
-                })
-                .toList();
+    public ResponseEntity<Map<String, Object>> save(@Valid @RequestBody PlayerMatchDTO dto) {
+        log.info("Logger: Assigning player {} to match {}", dto.getPlayer().getId(), dto.getMatch().getId());
+        PlayerMatchDTO saved = playerMatchService.save(dto);
         log.info("Logger: Player match assigned successfully");
+
         Map<String, Object> response = new HashMap<>();
         response.put("message", "Player match assigned successfully");
-        response.put("data", playerMatchDTOList);
+        response.put("data", saved);
 
         return ResponseEntity.ok(response);
     }
+
 
     @GetMapping("/{id}")
     public ResponseEntity<PlayerMatchDTO> getById(@PathVariable Long id) {
@@ -57,7 +53,7 @@ public class PlayerMatchController {
     }
 
     @PutMapping()
-    public ResponseEntity<Map<String, Object>> updatePlayerMatch(@RequestBody PlayerMatchDTO playerMatchDTO) {
+    public ResponseEntity<Map<String, Object>> update(@RequestBody PlayerMatchDTO playerMatchDTO) {
         log.info("Logger: Request to update playerMatch, ID: {}", playerMatchDTO.getId());
         PlayerMatchDTO playerMatchDTO1 = playerMatchService.updatePlayerMatch(playerMatchDTO);
         log.info("Logger: Player match updated.");
