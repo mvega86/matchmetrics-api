@@ -9,10 +9,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.futbol</groupId>
-	<artifactId>api_party</artifactId>
+	<artifactId>matchmetrics-api</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>api_party</name>
-	<description>Api para la gestión de partidos de futbol</description>
+	<name>MatchMetrics API</name>
+	<description>API para la gestión y análisis de partidos de fútbol</description>
 	<url/>
 	<licenses>
 		<license/>
