@@ -11,6 +11,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.is;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -131,6 +132,44 @@ class AuthControllerTest {
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(loginBody))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void me_ShouldReturnAuthenticatedUser_WhenTokenIsValid() throws Exception {
+        String registerBody = """
+            {
+              "fullName": "Usuario Prueba",
+              "email": "usuario@test.com",
+              "password": "123456",
+              "requestedTeamName": "Equipo Prueba"
+            }
+            """;
+
+        String registerResponse = mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(registerBody))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        String token = registerResponse
+                .split("\"token\":\"")[1]
+                .split("\"")[0];
+
+        mockMvc.perform(get("/api/v1/auth/me")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email", is("usuario@test.com")))
+                .andExpect(jsonPath("$.fullName", is("Usuario Prueba")))
+                .andExpect(jsonPath("$.role", is("USER")))
+                .andExpect(jsonPath("$.status", is("PENDING")));
+    }
+
+    @Test
+    void me_ShouldFail_WhenTokenIsMissing() throws Exception {
+        mockMvc.perform(get("/api/v1/auth/me"))
                 .andExpect(status().isUnauthorized());
     }
 }
