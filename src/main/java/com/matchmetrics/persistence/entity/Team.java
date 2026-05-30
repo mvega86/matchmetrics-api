@@ -1,6 +1,7 @@
 package com.matchmetrics.persistence.entity;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.matchmetrics.persistence.audit.AuditModel;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -13,7 +14,7 @@ import java.util.List;
 @Table(name = "teams")
 @Getter
 @Setter
-public class Team {
+public class Team extends AuditModel {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
