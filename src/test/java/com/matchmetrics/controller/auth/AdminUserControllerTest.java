@@ -181,4 +181,25 @@ class AdminUserControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message", is("Usuario no encontrado")));
     }
+
+    @Test
+    void changeRole_ShouldChangeUserRole_WhenUserIsAdmin() throws Exception {
+        String body = """
+            {
+              "role": "MANAGER"
+            }
+            """;
+
+        mockMvc.perform(put("/api/v1/admin/users/" + pendingUser.getId() + "/role")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userId", is(pendingUser.getId().intValue())))
+                .andExpect(jsonPath("$.email", is("pending@test.com")))
+                .andExpect(jsonPath("$.role", is("MANAGER")));
+
+        AppUser updatedUser = appUserRepository.findById(pendingUser.getId()).orElseThrow();
+        org.junit.jupiter.api.Assertions.assertEquals(UserRole.MANAGER, updatedUser.getRole());
+    }
 }

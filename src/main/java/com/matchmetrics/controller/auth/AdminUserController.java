@@ -1,7 +1,9 @@
 package com.matchmetrics.controller.auth;
 
+import com.matchmetrics.mapper.dto.admin.ChangeUserRoleRequest;
 import com.matchmetrics.mapper.dto.admin.PendingUserResponse;
 import com.matchmetrics.service.IAdminUserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,5 +34,13 @@ public class AdminUserController {
     @PutMapping("/{userId}/disable")
     public PendingUserResponse disableUser(@PathVariable Long userId) {
         return adminUserService.disableUser(userId);
+    }
+
+    @PutMapping("/{userId}/role")
+    public PendingUserResponse changeRole(
+            @PathVariable Long userId,
+            @Valid @RequestBody ChangeUserRoleRequest request
+    ) {
+        return adminUserService.changeRole(userId, request.getRole());
     }
 }

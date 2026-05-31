@@ -1,5 +1,6 @@
 package com.matchmetrics.service.implementation;
 
+import com.matchmetrics.domain.enums.UserRole;
 import com.matchmetrics.domain.enums.UserStatus;
 import com.matchmetrics.mapper.dto.admin.PendingUserResponse;
 import com.matchmetrics.persistence.entity.AppUser;
@@ -55,6 +56,16 @@ public class AdminUserServiceImpl implements IAdminUserService {
     public PendingUserResponse disableUser(Long userId) {
         AppUser user = getUserOrThrow(userId);
         user.setStatus(UserStatus.DISABLED);
+
+        AppUser savedUser = appUserRepository.save(user);
+        return mapToPendingUserResponse(savedUser);
+    }
+
+    @Override
+    public PendingUserResponse changeRole(Long userId, UserRole role) {
+        AppUser user = getUserOrThrow(userId);
+
+        user.setRole(role);
 
         AppUser savedUser = appUserRepository.save(user);
         return mapToPendingUserResponse(savedUser);

@@ -14,4 +14,6 @@ public interface IAdminUserService {
     PendingUserResponse rejectUser(Long userId);
 
     PendingUserResponse disableUser(Long userId);
+
+    PendingUserResponse changeRole(Long userId, UserRole role);
 }
