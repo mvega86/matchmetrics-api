@@ -53,7 +53,11 @@ public class AdminUserServiceImpl implements IAdminUserService {
     }
 
     @Override
-    public PendingUserResponse disableUser(Long userId) {
+    public PendingUserResponse disableUser(Long userId, Long authenticatedUserId) {
+        if (userId.equals(authenticatedUserId)) {
+            throw new IllegalArgumentException("Un administrador no puede deshabilitarse a sí mismo");
+        }
+
         AppUser user = getUserOrThrow(userId);
         user.setStatus(UserStatus.DISABLED);
 

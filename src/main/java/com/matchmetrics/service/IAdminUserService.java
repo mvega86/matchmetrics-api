@@ -13,7 +13,7 @@ public interface IAdminUserService {
 
     PendingUserResponse rejectUser(Long userId);
 
-    PendingUserResponse disableUser(Long userId);
+    PendingUserResponse disableUser(Long userId, Long authenticatedUserId);
 
     PendingUserResponse changeRole(Long userId, UserRole role);
 }

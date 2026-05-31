@@ -202,4 +202,18 @@ class AdminUserControllerTest {
         AppUser updatedUser = appUserRepository.findById(pendingUser.getId()).orElseThrow();
         org.junit.jupiter.api.Assertions.assertEquals(UserRole.MANAGER, updatedUser.getRole());
     }
+
+    @Test
+    void disableUser_ShouldReturn400_WhenAdminDisablesHimself() throws Exception {
+        AppUser admin = appUserRepository.findByEmail("admin@test.com").orElseThrow();
+
+        mockMvc.perform(put("/api/v1/admin/users/" + admin.getId() + "/disable")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", is("Un administrador no puede deshabilitarse a sí mismo")));
+
+        AppUser updatedAdmin = appUserRepository.findById(admin.getId()).orElseThrow();
+        org.junit.jupiter.api.Assertions.assertEquals(UserStatus.APPROVED, updatedAdmin.getStatus());
+    }
 }
