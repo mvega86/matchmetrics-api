@@ -1,4 +1,4 @@
-package com.matchmetrics.controller;
+package com.matchmetrics.controller.auth;
 
 import com.matchmetrics.persistence.repository.AppUserRepository;
 import org.junit.jupiter.api.BeforeEach;
