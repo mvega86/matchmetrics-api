@@ -1,8 +1,10 @@
 package com.matchmetrics.controller.auth;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.matchmetrics.domain.enums.AuthProvider;
 import com.matchmetrics.domain.enums.UserRole;
 import com.matchmetrics.domain.enums.UserStatus;
+import com.matchmetrics.mapper.dto.auth.LoginRequest;
 import com.matchmetrics.persistence.entity.AppUser;
 import com.matchmetrics.persistence.repository.AppUserRepository;
 import com.matchmetrics.security.JwtService;
@@ -18,8 +20,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -37,6 +38,9 @@ class AdminUserControllerTest {
 
     @Autowired
     private JwtService jwtService;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     private String adminToken;
     private String userToken;
@@ -76,6 +80,28 @@ class AdminUserControllerTest {
 
         adminToken = jwtService.generateToken(savedAdmin);
         userToken = jwtService.generateToken(savedUser);
+    }
+
+    @Test
+    void login_ShouldFail_WhenUserIsPending() throws Exception {
+        AppUser user = new AppUser();
+        user.setEmail("pending-login@test.com");
+        user.setPassword(passwordEncoder.encode("123456"));
+        user.setFullName("Pending User");
+        user.setRole(UserRole.USER);
+        user.setStatus(UserStatus.PENDING);
+        user.setProvider(AuthProvider.LOCAL);
+
+        appUserRepository.save(user);
+
+        LoginRequest request = new LoginRequest();
+        request.setEmail("pending-login@test.com");
+        request.setPassword("123456");
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

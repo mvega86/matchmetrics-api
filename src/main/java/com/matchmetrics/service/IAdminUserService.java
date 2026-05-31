@@ -1,5 +1,6 @@
 package com.matchmetrics.service;
 
+import com.matchmetrics.domain.enums.UserRole;
 import com.matchmetrics.mapper.dto.admin.PendingUserResponse;
 
 import java.util.List;

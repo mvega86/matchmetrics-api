@@ -63,8 +63,8 @@ public class AuthServiceImpl implements IAuthService {
             throw new BadCredentialsException("Credenciales incorrectas");
         }
 
-        if (user.getStatus() == UserStatus.REJECTED || user.getStatus() == UserStatus.DISABLED) {
-            throw new BadCredentialsException("Usuario no habilitado");
+        if (user.getStatus() != UserStatus.APPROVED) {
+            throw new BadCredentialsException("Usuario pendiente de aprobación o no habilitado");
         }
 
         String token = jwtService.generateToken(user);

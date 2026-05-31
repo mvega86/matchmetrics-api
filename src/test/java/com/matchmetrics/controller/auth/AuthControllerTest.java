@@ -1,5 +1,9 @@
 package com.matchmetrics.controller.auth;
 
+import com.matchmetrics.domain.enums.AuthProvider;
+import com.matchmetrics.domain.enums.UserRole;
+import com.matchmetrics.domain.enums.UserStatus;
+import com.matchmetrics.persistence.entity.AppUser;
 import com.matchmetrics.persistence.repository.AppUserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -7,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.notNullValue;
@@ -24,6 +29,9 @@ class AuthControllerTest {
 
     @Autowired
     private AppUserRepository appUserRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @BeforeEach
     void setUp() {
@@ -54,26 +62,22 @@ class AuthControllerTest {
 
     @Test
     void login_ShouldReturnToken_WhenCredentialsAreValid() throws Exception {
-        String registerBody = """
-                {
-                  "fullName": "Usuario Prueba",
-                  "email": "usuario@test.com",
-                  "password": "123456",
-                  "requestedTeamName": "Equipo Prueba"
-                }
-                """;
+        AppUser user = new AppUser();
+        user.setFullName("Usuario Prueba");
+        user.setEmail("usuario@test.com");
+        user.setPassword(passwordEncoder.encode("123456"));
+        user.setProvider(AuthProvider.LOCAL);
+        user.setRole(UserRole.USER);
+        user.setStatus(UserStatus.APPROVED);
 
-        mockMvc.perform(post("/api/v1/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(registerBody))
-                .andExpect(status().isOk());
+        appUserRepository.save(user);
 
         String loginBody = """
-                {
-                  "email": "usuario@test.com",
-                  "password": "123456"
-                }
-                """;
+            {
+              "email": "usuario@test.com",
+              "password": "123456"
+            }
+            """;
 
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -81,7 +85,7 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token", notNullValue()))
                 .andExpect(jsonPath("$.email", is("usuario@test.com")))
-                .andExpect(jsonPath("$.status", is("PENDING")));
+                .andExpect(jsonPath("$.status", is("APPROVED")));
     }
 
     @Test
