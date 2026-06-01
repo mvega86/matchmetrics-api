@@ -1,7 +1,10 @@
 package com.matchmetrics.controller;
 
 import com.matchmetrics.mapper.dto.PlayerDTO;
+import com.matchmetrics.security.TeamAccessValidator;
 import com.matchmetrics.service.IPlayerService;
+import com.matchmetrics.domain.enums.UserRole;
+import com.matchmetrics.security.UserPrincipal;
 import com.matchmetrics.domain.enums.UserRole;
 import com.matchmetrics.security.UserPrincipal;
 
@@ -26,9 +29,11 @@ import java.util.Map;
 public class PlayerController {
 
     private IPlayerService playerService;
+    private TeamAccessValidator teamAccessValidator;
 
-    public PlayerController(IPlayerService playerService) {
+    public PlayerController(IPlayerService playerService, TeamAccessValidator teamAccessValidator) {
         this.playerService = playerService;
+        this.teamAccessValidator = teamAccessValidator;
     }
 
     @GetMapping
@@ -56,10 +61,18 @@ public class PlayerController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PlayerDTO> getById(@PathVariable Long id) {
-        log.debug("Request received to search player with ID: {}", id);
+    public ResponseEntity<PlayerDTO> getById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
         PlayerDTO player = playerService.getById(id);
-        return player != null ? ResponseEntity.ok(player) : ResponseEntity.notFound().build();
+
+        teamAccessValidator.validateSameTeamOrAdmin(
+                principal,
+                player.getTeamId()
+        );
+
+        return ResponseEntity.ok(player);
     }
 
     @PostMapping
