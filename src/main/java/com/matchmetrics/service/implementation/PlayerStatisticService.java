@@ -64,6 +64,29 @@ public class PlayerStatisticService implements IPlayerStatisticService {
     }
 
     @Override
+    public List<PlayerStatisticDTO> searchByTeam(String search, Long teamId) {
+        if (search != null && search.startsWith("match:")) {
+            Long matchId = Long.parseLong(search.split(":", 2)[1]);
+
+            log.info("Searching player statistics by match {} and authenticated team {}", matchId, teamId);
+
+            return playerStatisticRepository
+                    .findByPlayerMatchMatchIdAndPlayerMatchPlayerTeamIdOrderByCreatedAtDesc(matchId, teamId)
+                    .stream()
+                    .map(playerStatisticMapper::toDTO)
+                    .collect(Collectors.toList());
+        }
+
+        log.info("Searching player statistics for authenticated team: {}", teamId);
+
+        return playerStatisticRepository
+                .findByPlayerMatchPlayerTeamIdOrderByCreatedAtDesc(teamId)
+                .stream()
+                .map(playerStatisticMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     @Transactional
     public PlayerStatisticDTO createPlayerStatistic(PlayerStatisticDTO playerStatisticDTO) {
         log.info("Logging: Creating match statistic...");

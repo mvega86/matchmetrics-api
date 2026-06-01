@@ -2,10 +2,14 @@ package com.matchmetrics.controller;
 
 import com.matchmetrics.mapper.dto.PlayerStatisticDTO;
 import com.matchmetrics.service.IPlayerStatisticService;
+import com.matchmetrics.domain.enums.UserRole;
+import com.matchmetrics.security.UserPrincipal;
+
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import java.util.HashMap;
 import java.util.List;
@@ -20,10 +24,23 @@ public class PlayerStatisticController {
         this.playerStatisticService = playerStatisticService;
     }
     @GetMapping
-    public ResponseEntity<List<PlayerStatisticDTO>> getAll(@RequestParam(value = "search", required = false) String search) {
+    public ResponseEntity<List<PlayerStatisticDTO>> getAll(
+            @RequestParam(value = "search", required = false) String search,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
         log.info("Logger: Request to get all players statistics with search: {}", search);
-        List<PlayerStatisticDTO> playerStatisticDTOList = playerStatisticService.search(search);
-        return ResponseEntity.ok(playerStatisticDTOList);
+
+        if (principal.getRole() == UserRole.ADMIN) {
+            return ResponseEntity.ok(playerStatisticService.search(search));
+        }
+
+        if (principal.getTeamId() == null) {
+            return ResponseEntity.status(403).build();
+        }
+
+        return ResponseEntity.ok(
+                playerStatisticService.searchByTeam(search, principal.getTeamId())
+        );
     }
     @PostMapping
     public ResponseEntity<Map<String, Object>> createPlayerStatistics(@Valid @RequestBody PlayerStatisticDTO playerStatisticDTO) {
