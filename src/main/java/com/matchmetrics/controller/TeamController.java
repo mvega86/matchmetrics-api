@@ -2,10 +2,14 @@ package com.matchmetrics.controller;
 
 import com.matchmetrics.mapper.dto.TeamDTO;
 import com.matchmetrics.service.ITeamService;
+import com.matchmetrics.security.TeamAccessValidator;
+import com.matchmetrics.security.UserPrincipal;
+
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import java.util.List;
 import java.util.Map;
@@ -20,9 +24,11 @@ import java.util.Map;
 public class TeamController {
 
     private ITeamService teamService;
+    private final TeamAccessValidator teamAccessValidator;
 
-    public TeamController(ITeamService teamService) {
+    public TeamController(ITeamService teamService, TeamAccessValidator teamAccessValidator) {
         this.teamService = teamService;
+        this.teamAccessValidator = teamAccessValidator;
     }
 
     @GetMapping
@@ -34,10 +40,18 @@ public class TeamController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TeamDTO> getById(@PathVariable Long id) {
-        log.debug("Request received to search team with ID: {}", id);
+    public ResponseEntity<TeamDTO> getById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
         TeamDTO team = teamService.getById(id);
-        return team != null ? ResponseEntity.ok(team) : ResponseEntity.notFound().build();
+
+        teamAccessValidator.validateSameTeamOrAdmin(
+                principal,
+                team.getId()
+        );
+
+        return ResponseEntity.ok(team);
     }
 
     @PostMapping
