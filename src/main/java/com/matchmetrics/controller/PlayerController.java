@@ -5,8 +5,6 @@ import com.matchmetrics.security.TeamAccessValidator;
 import com.matchmetrics.service.IPlayerService;
 import com.matchmetrics.domain.enums.UserRole;
 import com.matchmetrics.security.UserPrincipal;
-import com.matchmetrics.domain.enums.UserRole;
-import com.matchmetrics.security.UserPrincipal;
 
 import jakarta.validation.Valid;
 
