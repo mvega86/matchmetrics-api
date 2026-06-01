@@ -1,9 +1,6 @@
 package com.matchmetrics.controller;
 
-import com.matchmetrics.mapper.dto.auth.AuthResponse;
-import com.matchmetrics.mapper.dto.auth.AuthenticatedUserResponse;
-import com.matchmetrics.mapper.dto.auth.LoginRequest;
-import com.matchmetrics.mapper.dto.auth.RegisterRequest;
+import com.matchmetrics.mapper.dto.auth.*;
 import com.matchmetrics.security.UserPrincipal;
 import com.matchmetrics.service.IAuthService;
 import jakarta.validation.Valid;
@@ -30,17 +27,20 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public AuthenticatedUserResponse me(@AuthenticationPrincipal UserPrincipal principal) {
+    public AuthMeResponse me(@AuthenticationPrincipal UserPrincipal principal) {
         if (principal == null) {
             throw new BadCredentialsException("Usuario no autenticado");
         }
 
-        return new AuthenticatedUserResponse(
+        return new AuthMeResponse(
                 principal.getId(),
                 principal.getEmail(),
                 principal.getFullName(),
                 principal.getRole(),
-                principal.getStatus()
+                principal.getStatus(),
+                principal.getTeamId(),
+                principal.getTeamName(),
+                principal.getRequestedTeamName()
         );
     }
 }

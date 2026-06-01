@@ -20,6 +20,9 @@ public class UserPrincipal implements UserDetails {
     private final String fullName;
     private final UserRole role;
     private final UserStatus status;
+    private final Long teamId;
+    private final String teamName;
+    private final String requestedTeamName;
 
     public UserPrincipal(AppUser user) {
         this.id = user.getId();
@@ -28,6 +31,9 @@ public class UserPrincipal implements UserDetails {
         this.fullName = user.getFullName();
         this.role = user.getRole();
         this.status = user.getStatus();
+        this.teamId = user.getTeam() != null ? user.getTeam().getId() : null;
+        this.teamName = user.getTeam() != null ? user.getTeam().getName() : null;
+        this.requestedTeamName = user.getRequestedTeamName();
     }
 
     public AppUser toAppUserReference() {
