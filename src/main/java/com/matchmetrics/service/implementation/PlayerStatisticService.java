@@ -15,8 +15,10 @@ import com.matchmetrics.persistence.entity.PlayerMatch;
 import com.matchmetrics.persistence.entity.PlayerStatistic;
 import com.matchmetrics.persistence.entity.Statistic;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -119,10 +121,11 @@ public class PlayerStatisticService implements IPlayerStatisticService {
     }
 
     @Override
-    public List<PlayerStatisticDTO> getStatisticsByPlayerMatch(Long playerMatchId) {
-        log.info("Logging: Searching playermatch with id {}...", playerMatchId);
-        return playerStatisticRepository.findByPlayerMatchId(playerMatchId).stream()
-                .map(playerStatisticMapper::toDTO).toList();
+    public PlayerStatisticDTO getById(Long id) {
+        PlayerStatistic playerStatistic = playerStatisticRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        return playerStatisticMapper.toDTO(playerStatistic);
     }
 
     @Override

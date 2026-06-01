@@ -4,6 +4,8 @@ import com.matchmetrics.mapper.dto.PlayerStatisticDTO;
 import com.matchmetrics.service.IPlayerStatisticService;
 import com.matchmetrics.domain.enums.UserRole;
 import com.matchmetrics.security.UserPrincipal;
+import com.matchmetrics.security.TeamAccessValidator;
+import com.matchmetrics.security.UserPrincipal;
 
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -20,8 +22,10 @@ import java.util.Map;
 @Slf4j
 public class PlayerStatisticController {
     private final IPlayerStatisticService playerStatisticService;
-    public PlayerStatisticController(IPlayerStatisticService playerStatisticService) {
+    private final TeamAccessValidator teamAccessValidator;
+    public PlayerStatisticController(IPlayerStatisticService playerStatisticService, TeamAccessValidator teamAccessValidator) {
         this.playerStatisticService = playerStatisticService;
+        this.teamAccessValidator = teamAccessValidator;
     }
     @GetMapping
     public ResponseEntity<List<PlayerStatisticDTO>> getAll(
@@ -52,6 +56,28 @@ public class PlayerStatisticController {
         response.put("data", createdStat);
 
         return ResponseEntity.ok(response);
+    }
+    @GetMapping("/{id}")
+    public ResponseEntity<PlayerStatisticDTO> getById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        log.info("Request to get player statistic with ID: {}", id);
+
+        PlayerStatisticDTO playerStatisticDTO = playerStatisticService.getById(id);
+
+        Long resourceTeamId =
+                playerStatisticDTO.getPlayerMatch() != null
+                        && playerStatisticDTO.getPlayerMatch().getPlayer() != null
+                        ? playerStatisticDTO.getPlayerMatch().getPlayer().getTeamId()
+                        : null;
+
+        teamAccessValidator.validateSameTeamOrAdmin(
+                principal,
+                resourceTeamId
+        );
+
+        return ResponseEntity.ok(playerStatisticDTO);
     }
     @PutMapping
     public ResponseEntity<PlayerStatisticDTO> updateStatistic(@RequestBody PlayerStatisticDTO dto) {
