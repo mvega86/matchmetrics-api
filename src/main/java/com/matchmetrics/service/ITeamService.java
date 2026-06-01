@@ -9,6 +9,7 @@ import java.util.List;
 // =========================
 public interface ITeamService {
     List<TeamDTO> getAll();
+    List<TeamDTO> search(String search);
     TeamDTO getById(Long id);
     TeamDTO save(TeamDTO teamDTO);
     void delete(Long id);

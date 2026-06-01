@@ -44,6 +44,23 @@ public class TeamService implements ITeamService {
     }
 
     @Override
+    public List<TeamDTO> search(String search) {
+        if (search != null && search.startsWith("name:")) {
+            String name = search.split(":", 2)[1].trim();
+
+            log.info("Searching teams by name: {}", name);
+
+            return teamRepository.findByNameContainingIgnoreCase(name)
+                    .stream()
+                    .map(teamMapper::toDTO)
+                    .collect(Collectors.toList());
+        }
+
+        log.info("Searching all teams...");
+        return getAll();
+    }
+
+    @Override
     public TeamDTO getById(Long id) {
         log.info("Searching team with id {}...", id);
         Team team = teamRepository.findById(id)

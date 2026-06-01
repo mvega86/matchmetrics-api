@@ -5,6 +5,7 @@ import com.matchmetrics.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -51,8 +52,60 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/register").permitAll()
                         .requestMatchers("/api/v1/auth/login").permitAll()
-                        .requestMatchers("/api/v1/teams/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/teams").permitAll()
+
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/v1/players/**",
+                                "/api/v1/teams/**",
+                                "/api/v1/matches/**",
+                                "/api/v1/statistics/**",
+                                "/api/v1/player-statistics/**",
+                                "/api/v1/player-matches/**",
+                                "/api/v1/field-zones/**"
+                        ).hasAnyRole("ADMIN", "MANAGER", "USER")
+
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/v1/players/**",
+                                "/api/v1/teams/**",
+                                "/api/v1/matches/**",
+                                "/api/v1/statistics/**",
+                                "/api/v1/player-statistics/**",
+                                "/api/v1/player-matches/**",
+                                "/api/v1/field-zones/**"
+                        ).hasAnyRole("ADMIN", "MANAGER")
+
+                        .requestMatchers(HttpMethod.PUT,
+                                "/api/v1/players/**",
+                                "/api/v1/teams/**",
+                                "/api/v1/matches/**",
+                                "/api/v1/statistics/**",
+                                "/api/v1/player-statistics/**",
+                                "/api/v1/player-matches/**",
+                                "/api/v1/field-zones/**"
+                        ).hasAnyRole("ADMIN", "MANAGER")
+
+                        .requestMatchers(HttpMethod.PATCH,
+                                "/api/v1/players/**",
+                                "/api/v1/teams/**",
+                                "/api/v1/matches/**",
+                                "/api/v1/statistics/**",
+                                "/api/v1/player-statistics/**",
+                                "/api/v1/player-matches/**",
+                                "/api/v1/field-zones/**"
+                        ).hasAnyRole("ADMIN", "MANAGER")
+
+                        .requestMatchers(HttpMethod.DELETE,
+                                "/api/v1/players/**",
+                                "/api/v1/teams/**",
+                                "/api/v1/matches/**",
+                                "/api/v1/statistics/**",
+                                "/api/v1/player-statistics/**",
+                                "/api/v1/player-matches/**",
+                                "/api/v1/field-zones/**"
+                        ).hasAnyRole("ADMIN", "MANAGER")
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

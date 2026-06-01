@@ -34,9 +34,11 @@ public class StatisticController {
     }
 
     @GetMapping
-    public List<StatisticDTO> getAllStatistics() {
-        log.info("Request to get all statistic...");
-        return statisticService.getAllStatistics();
+    public List<StatisticDTO> getAllStatistics(
+            @RequestParam(value = "search", required = false) String search
+    ) {
+        log.info("Request to get statistics with search: {}", search);
+        return statisticService.search(search);
     }
 
     @PutMapping

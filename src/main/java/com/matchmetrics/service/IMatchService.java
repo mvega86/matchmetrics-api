@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface IMatchService {
     MatchDTO createMatch(MatchDTO matchDTO);
-    List<MatchDTO> getAllMatches();
+    List<MatchDTO> search(String search);
     MatchDTO getMatchById(Long matchId);
     MatchDTO updateMatch(MatchDTO matchDTO);
     void delete(Long id);

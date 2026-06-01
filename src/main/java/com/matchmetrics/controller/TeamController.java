@@ -26,9 +26,11 @@ public class TeamController {
     }
 
     @GetMapping
-    public ResponseEntity<List<TeamDTO>> getAll() {
-        log.info("Request received to search teams...");
-        return ResponseEntity.ok(teamService.getAll());
+    public ResponseEntity<List<TeamDTO>> getAll(
+            @RequestParam(value = "search", required = false) String search
+    ) {
+        log.info("Request received to search teams with search: {}", search);
+        return ResponseEntity.ok(teamService.search(search));
     }
 
     @GetMapping("/{id}")

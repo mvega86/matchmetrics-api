@@ -9,7 +9,7 @@ public interface IStatisticService {
 
     StatisticDTO createStatistic(StatisticDTO statisticDTO);
 
-    List<StatisticDTO> getAllStatistics();
+    List<StatisticDTO> search(String search);
 
     StatisticDTO updateStatistic(StatisticDTO statisticDTO);
 

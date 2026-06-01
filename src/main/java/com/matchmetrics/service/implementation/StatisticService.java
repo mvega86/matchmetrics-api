@@ -41,13 +41,24 @@ public class StatisticService implements IStatisticService {
     }
 
     @Override
-    public List<StatisticDTO> getAllStatistics() {
+    public List<StatisticDTO> search(String search) {
+        if (search != null && search.startsWith("name:")) {
+            String name = search.split(":", 2)[1].trim();
+
+            log.info("Searching statistics by name: {}", name);
+
+            return statisticRepository.findByNameContainingIgnoreCaseOrderByNameAsc(name)
+                    .stream()
+                    .map(statisticMapper::toDTO)
+                    .toList();
+        }
+
         log.info("Getting all statistics...");
-        List<StatisticDTO> statisticDTOList = statisticRepository.findAll().stream()
+
+        return statisticRepository.findAllByOrderByNameAsc()
+                .stream()
                 .map(statisticMapper::toDTO)
                 .toList();
-        log.info("Statistics done.");
-        return statisticDTOList;
     }
 
     @Override

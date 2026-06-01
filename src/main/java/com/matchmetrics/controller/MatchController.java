@@ -32,9 +32,11 @@ public class MatchController {
     }
 
     @GetMapping
-    public ResponseEntity<List<MatchDTO>> getAllMatches() {
-        log.info("Request to fetch all matches");
-        return ResponseEntity.ok(matchService.getAllMatches());
+    public ResponseEntity<List<MatchDTO>> getAllMatches(
+            @RequestParam(value = "search", required = false) String search
+    ) {
+        log.info("Request to fetch matches with search: {}", search);
+        return ResponseEntity.ok(matchService.search(search));
     }
 
     @GetMapping("/{matchId}")
