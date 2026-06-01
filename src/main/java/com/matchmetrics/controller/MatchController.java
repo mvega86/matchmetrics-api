@@ -4,6 +4,8 @@ import com.matchmetrics.mapper.dto.MatchDTO;
 import com.matchmetrics.service.IMatchService;
 import com.matchmetrics.domain.enums.UserRole;
 import com.matchmetrics.security.UserPrincipal;
+import com.matchmetrics.security.TeamAccessValidator;
+import com.matchmetrics.security.UserPrincipal;
 
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -20,9 +22,14 @@ import java.util.Map;
 public class MatchController {
 
     private final IMatchService matchService;
+    private final TeamAccessValidator teamAccessValidator;
 
-    public MatchController(IMatchService matchService) {
+    public MatchController(
+            IMatchService matchService,
+            TeamAccessValidator teamAccessValidator
+    ) {
         this.matchService = matchService;
+        this.teamAccessValidator = teamAccessValidator;
     }
 
     @PostMapping
@@ -56,10 +63,29 @@ public class MatchController {
     }
 
     @GetMapping("/{matchId}")
-    public ResponseEntity<MatchDTO> getMatchById(@PathVariable Long matchId) {
+    public ResponseEntity<MatchDTO> getMatchById(
+            @PathVariable Long matchId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
         log.info("Request to fetch match with ID: {}", matchId);
+
         MatchDTO matchDTO = matchService.getMatchById(matchId);
-        return matchDTO != null ? ResponseEntity.ok(matchDTO) : ResponseEntity.notFound().build();
+
+        Long homeTeamId = matchDTO.getHomeTeam() != null
+                ? matchDTO.getHomeTeam().getId()
+                : null;
+
+        Long awayTeamId = matchDTO.getAwayTeam() != null
+                ? matchDTO.getAwayTeam().getId()
+                : null;
+
+        teamAccessValidator.validateAnyTeamOrAdmin(
+                principal,
+                homeTeamId,
+                awayTeamId
+        );
+
+        return ResponseEntity.ok(matchDTO);
     }
 
     @PutMapping
