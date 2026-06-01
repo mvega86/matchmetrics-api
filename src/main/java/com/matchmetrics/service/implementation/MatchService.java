@@ -88,6 +88,17 @@ public class MatchService implements IMatchService {
     }
 
     @Override
+    public List<MatchDTO> searchByTeam(String search, Long teamId) {
+        log.info("Searching matches for authenticated team: {}", teamId);
+
+        return matchRepository
+                .findByHomeTeamIdOrAwayTeamIdOrderByStartFirstTimeAsc(teamId, teamId)
+                .stream()
+                .map(matchMapper::toDTO)
+                .toList();
+    }
+
+    @Override
     public MatchDTO getMatchById(Long matchId) {
         log.info("Logger: Searching match with id {}...", matchId);
         Match match = matchRepository.findById(matchId)

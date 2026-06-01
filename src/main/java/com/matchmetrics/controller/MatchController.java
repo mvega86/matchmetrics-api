@@ -2,10 +2,14 @@ package com.matchmetrics.controller;
 
 import com.matchmetrics.mapper.dto.MatchDTO;
 import com.matchmetrics.service.IMatchService;
+import com.matchmetrics.domain.enums.UserRole;
+import com.matchmetrics.security.UserPrincipal;
+
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import java.util.List;
 import java.util.Map;
@@ -33,10 +37,22 @@ public class MatchController {
 
     @GetMapping
     public ResponseEntity<List<MatchDTO>> getAllMatches(
-            @RequestParam(value = "search", required = false) String search
+            @RequestParam(value = "search", required = false) String search,
+            @AuthenticationPrincipal UserPrincipal principal
     ) {
         log.info("Request to fetch matches with search: {}", search);
-        return ResponseEntity.ok(matchService.search(search));
+
+        if (principal.getRole() == UserRole.ADMIN) {
+            return ResponseEntity.ok(matchService.search(search));
+        }
+
+        if (principal.getTeamId() == null) {
+            return ResponseEntity.status(403).build();
+        }
+
+        return ResponseEntity.ok(
+                matchService.searchByTeam(search, principal.getTeamId())
+        );
     }
 
     @GetMapping("/{matchId}")
