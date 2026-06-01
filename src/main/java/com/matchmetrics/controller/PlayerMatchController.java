@@ -4,6 +4,8 @@ import com.matchmetrics.mapper.dto.PlayerMatchDTO;
 import com.matchmetrics.service.IPlayerMatchService;
 import com.matchmetrics.domain.enums.UserRole;
 import com.matchmetrics.security.UserPrincipal;
+import com.matchmetrics.security.TeamAccessValidator;
+import com.matchmetrics.security.UserPrincipal;
 
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -21,9 +23,14 @@ import java.util.Map;
 public class PlayerMatchController {
 
     private final IPlayerMatchService playerMatchService;
+    private final TeamAccessValidator teamAccessValidator;
 
-    public PlayerMatchController(IPlayerMatchService playerMatchService) {
+    public PlayerMatchController(
+            IPlayerMatchService playerMatchService,
+            TeamAccessValidator teamAccessValidator
+    ) {
         this.playerMatchService = playerMatchService;
+        this.teamAccessValidator = teamAccessValidator;
     }
 
     @GetMapping
@@ -61,9 +68,24 @@ public class PlayerMatchController {
 
 
     @GetMapping("/{id}")
-    public ResponseEntity<PlayerMatchDTO> getById(@PathVariable Long id) {
-        log.info("Logger: Request to fetch players for match ID: {}", id);
-        return ResponseEntity.ok(playerMatchService.getById(id));
+    public ResponseEntity<PlayerMatchDTO> getById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        log.info("Logger: Request to fetch player match with ID: {}", id);
+
+        PlayerMatchDTO playerMatchDTO = playerMatchService.getById(id);
+
+        Long resourceTeamId = playerMatchDTO.getPlayer() != null
+                ? playerMatchDTO.getPlayer().getTeamId()
+                : null;
+
+        teamAccessValidator.validateSameTeamOrAdmin(
+                principal,
+                resourceTeamId
+        );
+
+        return ResponseEntity.ok(playerMatchDTO);
     }
 
     @PutMapping()
