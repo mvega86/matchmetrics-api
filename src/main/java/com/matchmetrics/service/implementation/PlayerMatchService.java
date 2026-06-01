@@ -56,6 +56,27 @@ public class PlayerMatchService implements IPlayerMatchService {
     }
 
     @Override
+    public List<PlayerMatchDTO> searchByTeam(String search, Long teamId) {
+        if (search != null && search.startsWith("match:")) {
+            Long matchId = Long.parseLong(search.split(":", 2)[1]);
+
+            log.info("Searching player matches by match {} and authenticated team {}", matchId, teamId);
+
+            return playerMatchRepository.findByMatchIdAndPlayerTeamId(matchId, teamId)
+                    .stream()
+                    .map(playerMatchMapper::toDTO)
+                    .collect(Collectors.toList());
+        }
+
+        log.info("Searching player matches for authenticated team: {}", teamId);
+
+        return playerMatchRepository.findByPlayerTeamId(teamId)
+                .stream()
+                .map(playerMatchMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     @Transactional
     public PlayerMatchDTO save(PlayerMatchDTO playerMatchDTO) {
         log.info("Assigning player to match...");

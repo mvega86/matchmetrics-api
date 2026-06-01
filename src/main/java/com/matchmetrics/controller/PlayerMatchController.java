@@ -2,10 +2,14 @@ package com.matchmetrics.controller;
 
 import com.matchmetrics.mapper.dto.PlayerMatchDTO;
 import com.matchmetrics.service.IPlayerMatchService;
+import com.matchmetrics.domain.enums.UserRole;
+import com.matchmetrics.security.UserPrincipal;
+
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import java.util.HashMap;
 import java.util.List;
@@ -23,10 +27,23 @@ public class PlayerMatchController {
     }
 
     @GetMapping
-    public ResponseEntity<List<PlayerMatchDTO>> getAll(@RequestParam(value = "search", required = false) String search) {
+    public ResponseEntity<List<PlayerMatchDTO>> getAll(
+            @RequestParam(value = "search", required = false) String search,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
         log.info("Logger: Request to get all players match with search: {}", search);
-        List<PlayerMatchDTO> playerMatchDTOList = playerMatchService.search(search);
-        return ResponseEntity.ok(playerMatchDTOList);
+
+        if (principal.getRole() == UserRole.ADMIN) {
+            return ResponseEntity.ok(playerMatchService.search(search));
+        }
+
+        if (principal.getTeamId() == null) {
+            return ResponseEntity.status(403).build();
+        }
+
+        return ResponseEntity.ok(
+                playerMatchService.searchByTeam(search, principal.getTeamId())
+        );
     }
 
     @PostMapping

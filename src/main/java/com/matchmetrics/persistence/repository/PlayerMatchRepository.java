@@ -9,8 +9,15 @@ import java.util.Optional;
 
 @Repository
 public interface PlayerMatchRepository extends JpaRepository<PlayerMatch, Long> {
-    List<PlayerMatch> findByMatchId(Long matchId); // Getting players from a match
-    List<PlayerMatch> findByPlayerId(Long playerId); // Get matches from a player
+
+    List<PlayerMatch> findByMatchId(Long matchId);
+
+    List<PlayerMatch> findByPlayerId(Long playerId);
+
     Optional<PlayerMatch> findByMatchIdAndPlayerId(Long matchId, Long playerId);
+
+    List<PlayerMatch> findByPlayerTeamId(Long teamId);
+
+    List<PlayerMatch> findByMatchIdAndPlayerTeamId(Long matchId, Long teamId);
 }
 
