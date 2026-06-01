@@ -127,4 +127,14 @@ public class PlayerService implements IPlayerService {
             throw new RuntimeException("Error updating player.");
         }
     }
+
+    @Override
+    public List<PlayerDTO> searchPlayersByTeam(String search, Long teamId) {
+        log.info("Searching players for authenticated team: {}", teamId);
+
+        return playerRepository.findByTeamIdOrderByFullNameAsc(teamId)
+                .stream()
+                .map(playerMapper::toDTO)
+                .collect(Collectors.toList());
+    }
 }

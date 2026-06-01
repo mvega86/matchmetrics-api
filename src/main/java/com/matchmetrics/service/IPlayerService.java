@@ -5,9 +5,12 @@ import com.matchmetrics.mapper.dto.PlayerDTO;
 import java.util.List;
 
 public interface IPlayerService {
-    public PlayerDTO save(PlayerDTO playerDTO);
+
+    PlayerDTO save(PlayerDTO playerDTO);
 
     List<PlayerDTO> searchPlayers(String search);
+
+    List<PlayerDTO> searchPlayersByTeam(String search, Long teamId);
 
     PlayerDTO getById(Long id);
 
