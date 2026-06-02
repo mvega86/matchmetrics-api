@@ -1,11 +1,15 @@
 package com.matchmetrics.controller;
 
+import com.matchmetrics.mapper.dto.MatchDTO;
+import com.matchmetrics.mapper.dto.PlayerDTO;
 import com.matchmetrics.mapper.dto.PlayerMatchDTO;
+import com.matchmetrics.service.IMatchService;
 import com.matchmetrics.service.IPlayerMatchService;
 import com.matchmetrics.domain.enums.UserRole;
 import com.matchmetrics.security.UserPrincipal;
 import com.matchmetrics.security.TeamAccessValidator;
 
+import com.matchmetrics.service.IPlayerService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -22,13 +26,17 @@ import java.util.Map;
 public class PlayerMatchController {
 
     private final IPlayerMatchService playerMatchService;
+    private final IPlayerService playerService;
+    private final IMatchService matchService;
     private final TeamAccessValidator teamAccessValidator;
 
     public PlayerMatchController(
-            IPlayerMatchService playerMatchService,
+            IPlayerMatchService playerMatchService, IPlayerService playerService, IMatchService matchService,
             TeamAccessValidator teamAccessValidator
     ) {
         this.playerMatchService = playerMatchService;
+        this.playerService = playerService;
+        this.matchService = matchService;
         this.teamAccessValidator = teamAccessValidator;
     }
 
@@ -57,9 +65,18 @@ public class PlayerMatchController {
             @Valid @RequestBody PlayerMatchDTO dto,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
+        PlayerDTO playerDTO = playerService.getById(dto.getPlayer().getId());
+        MatchDTO matchDTO = matchService.getMatchById(dto.getMatch().getId());
+
         teamAccessValidator.validateSameTeamOrAdmin(
                 principal,
-                dto.getPlayer() != null ? dto.getPlayer().getTeamId() : null
+                playerDTO.getTeamId()
+        );
+
+        teamAccessValidator.validateAnyTeamOrAdmin(
+                principal,
+                matchDTO.getHomeTeam() != null ? matchDTO.getHomeTeam().getId() : null,
+                matchDTO.getAwayTeam() != null ? matchDTO.getAwayTeam().getId() : null
         );
 
         log.info("Logger: Assigning player {} to match {}", dto.getPlayer().getId(), dto.getMatch().getId());

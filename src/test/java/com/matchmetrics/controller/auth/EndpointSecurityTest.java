@@ -94,14 +94,16 @@ class EndpointSecurityTest {
         when(playerService.save(any(PlayerDTO.class))).thenReturn(new PlayerDTO());
 
         String body = """
-                {
-                  "fullName": "Jugador Prueba",
-                  "jerseyName": "Prueba",
-                  "jerseyNumber": 10
-                }
-                """;
+        {
+          "fullName": "Jugador Prueba",
+          "jerseyName": "Prueba",
+          "jerseyNumber": 10,
+          "teamId": 1
+        }
+        """;
 
         mockMvc.perform(post("/api/v1/players")
+                        .with(user(userPrincipal(UserRole.MANAGER, 1L)))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isOk());
@@ -113,14 +115,16 @@ class EndpointSecurityTest {
         when(playerService.save(any(PlayerDTO.class))).thenReturn(new PlayerDTO());
 
         String body = """
-                {
-                  "fullName": "Jugador Prueba",
-                  "jerseyName": "Prueba",
-                  "jerseyNumber": 10
-                }
-                """;
+        {
+          "fullName": "Jugador Prueba",
+          "jerseyName": "Prueba",
+          "jerseyNumber": 10,
+          "teamId": 1
+        }
+        """;
 
         mockMvc.perform(post("/api/v1/players")
+                        .with(user(userPrincipal(UserRole.ADMIN, null)))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isOk());
@@ -155,8 +159,6 @@ class EndpointSecurityTest {
     @Test
     @WithMockUser(roles = "MANAGER")
     void teamsPost_ShouldAllowManagerRole() throws Exception {
-        when(teamService.save(any(TeamDTO.class))).thenReturn(new TeamDTO());
-
         String body = """
                 {
                   "name": "Equipo Prueba",
@@ -166,9 +168,10 @@ class EndpointSecurityTest {
                 """;
 
         mockMvc.perform(post("/api/v1/teams")
+                        .with(user(userPrincipal(UserRole.MANAGER, 1L)))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
-                .andExpect(status().isOk());
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -185,6 +188,43 @@ class EndpointSecurityTest {
         mockMvc.perform(get("/api/v1/matches")
                         .with(user(userPrincipal(UserRole.USER, 1L))))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void teamsPost_ShouldAllowAdminRole() throws Exception {
+        when(teamService.save(any(TeamDTO.class))).thenReturn(new TeamDTO());
+
+        String body = """
+            {
+              "name": "Equipo Prueba",
+              "acronym": "EQU",
+              "stadium": "Pendiente"
+            }
+            """;
+
+        mockMvc.perform(post("/api/v1/teams")
+                        .with(user(userPrincipal(UserRole.ADMIN, null)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void playersPost_ShouldReturn403_WhenManagerWritesOtherTeam() throws Exception {
+        String body = """
+    {
+      "fullName": "Jugador Prueba",
+      "jerseyName": "Prueba",
+      "jerseyNumber": 10,
+      "teamId": 2
+    }
+    """;
+
+        mockMvc.perform(post("/api/v1/players")
+                        .with(user(userPrincipal(UserRole.MANAGER, 1L)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isForbidden());
     }
 
     private UserPrincipal userPrincipal(UserRole role, Long teamId) {
