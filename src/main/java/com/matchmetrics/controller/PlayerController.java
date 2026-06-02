@@ -74,9 +74,18 @@ public class PlayerController {
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, Object>> save(@Valid @RequestBody PlayerDTO playerDTO) {
+    public ResponseEntity<Map<String, Object>> save(
+            @Valid @RequestBody PlayerDTO playerDTO,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        teamAccessValidator.validateSameTeamOrAdmin(
+                principal,
+                playerDTO.getTeamId()
+        );
+
         log.info("Request received to save player: {}", playerDTO.getFullName());
         PlayerDTO saved = playerService.save(playerDTO);
+
         return ResponseEntity.ok(Map.of(
                 "message", "Successfully saved player!!!",
                 "data", saved
@@ -84,17 +93,43 @@ public class PlayerController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        PlayerDTO player = playerService.getById(id);
+
+        teamAccessValidator.validateSameTeamOrAdmin(
+                principal,
+                player.getTeamId()
+        );
+
         log.debug("Request received to delete player with ID: {}", id);
         playerService.delete(id);
+
         return ResponseEntity.noContent().build();
     }
 
     @PutMapping
-    public ResponseEntity<Map<String, Object>> update(@Valid @RequestBody PlayerDTO playerDTO) {
+    public ResponseEntity<Map<String, Object>> update(
+            @Valid @RequestBody PlayerDTO playerDTO,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        PlayerDTO currentPlayer = playerService.getById(playerDTO.getId());
+
+        teamAccessValidator.validateSameTeamOrAdmin(
+                principal,
+                currentPlayer.getTeamId()
+        );
+
+        teamAccessValidator.validateSameTeamOrAdmin(
+                principal,
+                playerDTO.getTeamId()
+        );
+
         log.info("Request to update player...");
         PlayerDTO playerDTOOut = playerService.updateStatistic(playerDTO);
-        log.info("Player updated.");
+
         return ResponseEntity.ok(Map.of(
                 "message", "Successfully updated player!!!",
                 "data", playerDTOOut

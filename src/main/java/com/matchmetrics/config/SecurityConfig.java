@@ -52,9 +52,17 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/register").permitAll()
                         .requestMatchers("/api/v1/auth/login").permitAll()
+
+                        // Necesario para el registro
                         .requestMatchers(HttpMethod.GET, "/api/v1/teams").permitAll()
 
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+
+                        // Escritura de Teams solo ADMIN
+                        .requestMatchers(HttpMethod.POST, "/api/v1/teams/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/teams/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/teams/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/teams/**").hasRole("ADMIN")
 
                         .requestMatchers(HttpMethod.GET,
                                 "/api/v1/players/**",

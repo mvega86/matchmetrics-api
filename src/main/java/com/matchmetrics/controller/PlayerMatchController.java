@@ -5,7 +5,6 @@ import com.matchmetrics.service.IPlayerMatchService;
 import com.matchmetrics.domain.enums.UserRole;
 import com.matchmetrics.security.UserPrincipal;
 import com.matchmetrics.security.TeamAccessValidator;
-import com.matchmetrics.security.UserPrincipal;
 
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -54,10 +53,17 @@ public class PlayerMatchController {
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, Object>> save(@Valid @RequestBody PlayerMatchDTO dto) {
+    public ResponseEntity<Map<String, Object>> save(
+            @Valid @RequestBody PlayerMatchDTO dto,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        teamAccessValidator.validateSameTeamOrAdmin(
+                principal,
+                dto.getPlayer() != null ? dto.getPlayer().getTeamId() : null
+        );
+
         log.info("Logger: Assigning player {} to match {}", dto.getPlayer().getId(), dto.getMatch().getId());
         PlayerMatchDTO saved = playerMatchService.save(dto);
-        log.info("Logger: Player match assigned successfully");
 
         Map<String, Object> response = new HashMap<>();
         response.put("message", "Player match assigned successfully");
@@ -65,7 +71,6 @@ public class PlayerMatchController {
 
         return ResponseEntity.ok(response);
     }
-
 
     @GetMapping("/{id}")
     public ResponseEntity<PlayerMatchDTO> getById(
@@ -89,10 +94,25 @@ public class PlayerMatchController {
     }
 
     @PutMapping()
-    public ResponseEntity<Map<String, Object>> update(@RequestBody PlayerMatchDTO playerMatchDTO) {
+    public ResponseEntity<Map<String, Object>> update(
+            @RequestBody PlayerMatchDTO playerMatchDTO,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        PlayerMatchDTO currentPlayerMatch = playerMatchService.getById(playerMatchDTO.getId());
+
+        teamAccessValidator.validateSameTeamOrAdmin(
+                principal,
+                currentPlayerMatch.getPlayer() != null ? currentPlayerMatch.getPlayer().getTeamId() : null
+        );
+
+        teamAccessValidator.validateSameTeamOrAdmin(
+                principal,
+                playerMatchDTO.getPlayer() != null ? playerMatchDTO.getPlayer().getTeamId() : null
+        );
+
         log.info("Logger: Request to update playerMatch, ID: {}", playerMatchDTO.getId());
         PlayerMatchDTO playerMatchDTO1 = playerMatchService.updatePlayerMatch(playerMatchDTO);
-        log.info("Logger: Player match updated.");
+
         return ResponseEntity.ok(Map.of(
                 "message", "Player match updated successfully!!!",
                 "data", playerMatchDTO1
@@ -100,9 +120,20 @@ public class PlayerMatchController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        PlayerMatchDTO playerMatchDTO = playerMatchService.getById(id);
+
+        teamAccessValidator.validateSameTeamOrAdmin(
+                principal,
+                playerMatchDTO.getPlayer() != null ? playerMatchDTO.getPlayer().getTeamId() : null
+        );
+
         log.debug("Logger: Request received to delete player match with ID: {}", id);
         playerMatchService.delete(id);
+
         return ResponseEntity.noContent().build();
     }
 
