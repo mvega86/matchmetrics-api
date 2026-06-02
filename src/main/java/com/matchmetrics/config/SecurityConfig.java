@@ -59,9 +59,13 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 
                         // Escritura de Teams solo ADMIN
+                        .requestMatchers(HttpMethod.POST, "/api/v1/teams").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/v1/teams/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/teams").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/teams/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/teams").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/teams/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/teams").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/teams/**").hasRole("ADMIN")
 
                         .requestMatchers(HttpMethod.GET,
@@ -76,7 +80,6 @@ public class SecurityConfig {
 
                         .requestMatchers(HttpMethod.POST,
                                 "/api/v1/players/**",
-                                "/api/v1/teams/**",
                                 "/api/v1/matches/**",
                                 "/api/v1/statistics/**",
                                 "/api/v1/player-statistics/**",
@@ -86,7 +89,6 @@ public class SecurityConfig {
 
                         .requestMatchers(HttpMethod.PUT,
                                 "/api/v1/players/**",
-                                "/api/v1/teams/**",
                                 "/api/v1/matches/**",
                                 "/api/v1/statistics/**",
                                 "/api/v1/player-statistics/**",
@@ -96,7 +98,6 @@ public class SecurityConfig {
 
                         .requestMatchers(HttpMethod.PATCH,
                                 "/api/v1/players/**",
-                                "/api/v1/teams/**",
                                 "/api/v1/matches/**",
                                 "/api/v1/statistics/**",
                                 "/api/v1/player-statistics/**",
@@ -106,7 +107,6 @@ public class SecurityConfig {
 
                         .requestMatchers(HttpMethod.DELETE,
                                 "/api/v1/players/**",
-                                "/api/v1/teams/**",
                                 "/api/v1/matches/**",
                                 "/api/v1/statistics/**",
                                 "/api/v1/player-statistics/**",
