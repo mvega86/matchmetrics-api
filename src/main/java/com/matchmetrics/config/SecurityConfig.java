@@ -62,7 +62,7 @@ public class SecurityConfig {
                                 "/api/v1/matches/**",
                                 "/api/v1/statistics/**",
                                 "/api/v1/player-statistics/**",
-                                "/api/v1/player-matches/**",
+                                "/api/v1/players-match/**",
                                 "/api/v1/field-zones/**"
                         ).hasAnyRole("ADMIN", "MANAGER", "USER")
 
@@ -72,7 +72,7 @@ public class SecurityConfig {
                                 "/api/v1/matches/**",
                                 "/api/v1/statistics/**",
                                 "/api/v1/player-statistics/**",
-                                "/api/v1/player-matches/**",
+                                "/api/v1/players-match/**",
                                 "/api/v1/field-zones/**"
                         ).hasAnyRole("ADMIN", "MANAGER")
 
@@ -82,7 +82,7 @@ public class SecurityConfig {
                                 "/api/v1/matches/**",
                                 "/api/v1/statistics/**",
                                 "/api/v1/player-statistics/**",
-                                "/api/v1/player-matches/**",
+                                "/api/v1/players-match/**",
                                 "/api/v1/field-zones/**"
                         ).hasAnyRole("ADMIN", "MANAGER")
 
@@ -92,7 +92,7 @@ public class SecurityConfig {
                                 "/api/v1/matches/**",
                                 "/api/v1/statistics/**",
                                 "/api/v1/player-statistics/**",
-                                "/api/v1/player-matches/**",
+                                "/api/v1/players-match/**",
                                 "/api/v1/field-zones/**"
                         ).hasAnyRole("ADMIN", "MANAGER")
 
@@ -102,7 +102,7 @@ public class SecurityConfig {
                                 "/api/v1/matches/**",
                                 "/api/v1/statistics/**",
                                 "/api/v1/player-statistics/**",
-                                "/api/v1/player-matches/**",
+                                "/api/v1/players-match/**",
                                 "/api/v1/field-zones/**"
                         ).hasAnyRole("ADMIN", "MANAGER")
 
