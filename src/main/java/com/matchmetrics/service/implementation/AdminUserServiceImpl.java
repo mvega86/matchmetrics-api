@@ -89,7 +89,7 @@ public class AdminUserServiceImpl implements IAdminUserService {
                 ? user.getRequestedSportType()
                 : SportType.FOOTBALL;
 
-        return teamRepository.findByNameIgnoreCase(cleanTeamName)
+        return teamRepository.findByNameIgnoreCaseAndSportType(cleanTeamName, sportType)
                 .orElseGet(() -> createTeamFromRequestedName(cleanTeamName, sportType));
     }
 
