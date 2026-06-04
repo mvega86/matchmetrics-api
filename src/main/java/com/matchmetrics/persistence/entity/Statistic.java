@@ -10,7 +10,10 @@ import lombok.Setter;
 @Entity
 @Getter
 @Setter
-@Table(name = "statistic")
+@Table(
+    name = "statistic",
+    uniqueConstraints = @UniqueConstraint(columnNames = {"name", "sport_type"})
+)
 public class Statistic extends AuditModel {
 
     @Id
@@ -18,7 +21,7 @@ public class Statistic extends AuditModel {
     private Long id;
 
     @NotBlank
-    @Column(nullable = false, unique = true, length = 50)
+    @Column(nullable = false, length = 50)
     private String name;
 
     @Column(length = 255)
