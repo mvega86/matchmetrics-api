@@ -67,6 +67,59 @@ public class BaseballGameStateService implements IBaseballGameStateService {
 
     @Override
     @Transactional
+    public BaseballGameStateDTO updateGameState(Long matchId, BaseballGameStateDTO dto) {
+        log.info("Updating game state for match: {}", matchId);
+        BaseballGameState gameState = getGameStateEntity(matchId);
+
+        if (dto.getCurrentInning() != null) {
+            gameState.setCurrentInning(dto.getCurrentInning());
+        }
+        if (dto.getInningHalf() != null) {
+            gameState.setInningHalf(dto.getInningHalf());
+        }
+        if (dto.getOuts() != null) {
+            if (dto.getOuts() < 0 || dto.getOuts() > 3) {
+                throw new IllegalArgumentException("Outs must be between 0 and 3");
+            }
+            gameState.setOuts(dto.getOuts());
+        }
+        if (dto.getBalls() != null) {
+            if (dto.getBalls() < 0 || dto.getBalls() > 3) {
+                throw new IllegalArgumentException("Balls must be between 0 and 3");
+            }
+            gameState.setBalls(dto.getBalls());
+        }
+        if (dto.getStrikes() != null) {
+            if (dto.getStrikes() < 0 || dto.getStrikes() > 2) {
+                throw new IllegalArgumentException("Strikes must be between 0 and 2");
+            }
+            gameState.setStrikes(dto.getStrikes());
+        }
+        if (dto.getHomeScore() != null) {
+            gameState.setHomeScore(dto.getHomeScore());
+        }
+        if (dto.getAwayScore() != null) {
+            gameState.setAwayScore(dto.getAwayScore());
+        }
+        if (dto.getFirstBasePlayerMatchId() != null) {
+            gameState.setFirstBasePlayerMatch(playerMatchRepository.findById(dto.getFirstBasePlayerMatchId()).orElse(null));
+        }
+        if (dto.getSecondBasePlayerMatchId() != null) {
+            gameState.setSecondBasePlayerMatch(playerMatchRepository.findById(dto.getSecondBasePlayerMatchId()).orElse(null));
+        }
+        if (dto.getThirdBasePlayerMatchId() != null) {
+            gameState.setThirdBasePlayerMatch(playerMatchRepository.findById(dto.getThirdBasePlayerMatchId()).orElse(null));
+        }
+        if (dto.getStatus() != null) {
+            gameState.setStatus(dto.getStatus());
+        }
+
+        gameState = gameStateRepository.save(gameState);
+        return mapper.toDTO(gameState);
+    }
+
+    @Override
+    @Transactional
     public BaseballGameStateDTO updateInning(Long matchId, Integer inning) {
         log.info("Updating inning for match: {} to inning: {}", matchId, inning);
         BaseballGameState gameState = getGameStateEntity(matchId);
