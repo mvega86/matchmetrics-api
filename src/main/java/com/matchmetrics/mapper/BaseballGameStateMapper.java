@@ -20,53 +20,50 @@ public class BaseballGameStateMapper {
     }
 
     public BaseballGameStateDTO toDTO(BaseballGameState entity) {
-        return new BaseballGameStateDTO(
-                entity.getId(),
-                entity.getMatch().getId(),
-                entity.getCurrentInning(),
-                entity.getInningHalf(),
-                entity.getOuts(),
-                entity.getBalls(),
-                entity.getStrikes(),
-                entity.getHomeScore(),
-                entity.getAwayScore(),
-                entity.getFirstBasePlayerMatch() != null ? entity.getFirstBasePlayerMatch().getId() : null,
-                entity.getSecondBasePlayerMatch() != null ? entity.getSecondBasePlayerMatch().getId() : null,
-                entity.getThirdBasePlayerMatch() != null ? entity.getThirdBasePlayerMatch().getId() : null,
-                entity.getStatus()
-        );
+        BaseballGameStateDTO dto = new BaseballGameStateDTO();
+        dto.setId(entity.getId());
+        dto.setMatchId(entity.getMatch().getId());
+        dto.setCurrentInning(entity.getCurrentInning());
+        dto.setInningHalf(entity.getInningHalf());
+        dto.setOuts(entity.getOuts());
+        dto.setBalls(entity.getBalls());
+        dto.setStrikes(entity.getStrikes());
+        dto.setHomeScore(entity.getHomeScore());
+        dto.setAwayScore(entity.getAwayScore());
+        dto.setFirstBasePlayerMatchId(entity.getFirstBasePlayerMatch() != null ? entity.getFirstBasePlayerMatch().getId() : null);
+        dto.setSecondBasePlayerMatchId(entity.getSecondBasePlayerMatch() != null ? entity.getSecondBasePlayerMatch().getId() : null);
+        dto.setThirdBasePlayerMatchId(entity.getThirdBasePlayerMatch() != null ? entity.getThirdBasePlayerMatch().getId() : null);
+        dto.setStatus(entity.getStatus());
+        dto.setTotalInnings(entity.getTotalInnings());
+        return dto;
     }
 
     public BaseballGameState toEntity(BaseballGameStateDTO dto) {
         Match match = matchRepository.findById(dto.getMatchId())
                 .orElseThrow(() -> new IllegalArgumentException("Match not found"));
 
-        PlayerMatch firstBase = dto.getFirstBasePlayerMatchId() != null 
-            ? playerMatchRepository.findById(dto.getFirstBasePlayerMatchId()).orElse(null)
-            : null;
+        PlayerMatch firstBase = dto.getFirstBasePlayerMatchId() != null
+            ? playerMatchRepository.findById(dto.getFirstBasePlayerMatchId()).orElse(null) : null;
+        PlayerMatch secondBase = dto.getSecondBasePlayerMatchId() != null
+            ? playerMatchRepository.findById(dto.getSecondBasePlayerMatchId()).orElse(null) : null;
+        PlayerMatch thirdBase = dto.getThirdBasePlayerMatchId() != null
+            ? playerMatchRepository.findById(dto.getThirdBasePlayerMatchId()).orElse(null) : null;
 
-        PlayerMatch secondBase = dto.getSecondBasePlayerMatchId() != null 
-            ? playerMatchRepository.findById(dto.getSecondBasePlayerMatchId()).orElse(null)
-            : null;
-
-        PlayerMatch thirdBase = dto.getThirdBasePlayerMatchId() != null 
-            ? playerMatchRepository.findById(dto.getThirdBasePlayerMatchId()).orElse(null)
-            : null;
-
-        return new BaseballGameState(
-                dto.getId(),
-                match,
-                dto.getCurrentInning(),
-                dto.getInningHalf(),
-                dto.getOuts(),
-                dto.getBalls(),
-                dto.getStrikes(),
-                dto.getHomeScore(),
-                dto.getAwayScore(),
-                firstBase,
-                secondBase,
-                thirdBase,
-                dto.getStatus()
-        );
+        BaseballGameState entity = new BaseballGameState();
+        entity.setId(dto.getId());
+        entity.setMatch(match);
+        entity.setCurrentInning(dto.getCurrentInning());
+        entity.setInningHalf(dto.getInningHalf());
+        entity.setOuts(dto.getOuts() != null ? dto.getOuts() : 0);
+        entity.setBalls(dto.getBalls() != null ? dto.getBalls() : 0);
+        entity.setStrikes(dto.getStrikes() != null ? dto.getStrikes() : 0);
+        entity.setHomeScore(dto.getHomeScore() != null ? dto.getHomeScore() : 0);
+        entity.setAwayScore(dto.getAwayScore() != null ? dto.getAwayScore() : 0);
+        entity.setFirstBasePlayerMatch(firstBase);
+        entity.setSecondBasePlayerMatch(secondBase);
+        entity.setThirdBasePlayerMatch(thirdBase);
+        entity.setStatus(dto.getStatus());
+        // totalInnings is set by the service based on match sport type
+        return entity;
     }
 }

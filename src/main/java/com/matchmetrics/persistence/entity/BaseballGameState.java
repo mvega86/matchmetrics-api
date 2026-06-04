@@ -61,4 +61,7 @@ public class BaseballGameState extends AuditModel {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private BaseballGameStatus status = BaseballGameStatus.NOT_STARTED;
+
+    @Column(name = "total_innings", nullable = false)
+    private Integer totalInnings = 9;
 }

@@ -1,0 +1,173 @@
+package com.matchmetrics.controller;
+
+import com.matchmetrics.domain.enums.UserRole;
+import com.matchmetrics.mapper.dto.BaseballPlayEventDTO;
+import com.matchmetrics.mapper.dto.MatchDTO;
+import com.matchmetrics.security.TeamAccessValidator;
+import com.matchmetrics.security.UserPrincipal;
+import com.matchmetrics.service.IBaseballPlayEventService;
+import com.matchmetrics.service.IMatchService;
+import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+
+@Slf4j
+@RestController
+@RequestMapping("/api/v1/softball/play-events")
+@CrossOrigin(origins = "http://localhost:5173")
+public class SoftballPlayEventController {
+
+    private final IBaseballPlayEventService playEventService;
+    private final IMatchService matchService;
+    private final TeamAccessValidator teamAccessValidator;
+
+    public SoftballPlayEventController(
+            IBaseballPlayEventService playEventService,
+            IMatchService matchService,
+            TeamAccessValidator teamAccessValidator
+    ) {
+        this.playEventService = playEventService;
+        this.matchService = matchService;
+        this.teamAccessValidator = teamAccessValidator;
+    }
+
+    @PostMapping
+    public ResponseEntity<Map<String, Object>> create(
+            @Valid @RequestBody BaseballPlayEventDTO dto,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        log.info("Request to create softball play event for match: {}", dto.getMatchId());
+
+        if (principal.getRole() != UserRole.ADMIN && principal.getRole() != UserRole.MANAGER) {
+            return ResponseEntity.status(403).build();
+        }
+
+        MatchDTO match = matchService.getMatchById(dto.getMatchId());
+        teamAccessValidator.validateAnyTeamOrAdmin(
+                principal,
+                match.getHomeTeam() != null ? match.getHomeTeam().getId() : null,
+                match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
+        );
+
+        try {
+            BaseballPlayEventDTO created = playEventService.createPlayEvent(dto);
+            return ResponseEntity.ok(Map.of(
+                    "message", "Softball play event created successfully",
+                    "data", created
+            ));
+        } catch (Exception e) {
+            log.error("Error creating softball play event: {}", e.getMessage());
+            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<BaseballPlayEventDTO> getById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        log.info("Request to get softball play event: {}", id);
+
+        BaseballPlayEventDTO event = playEventService.getPlayEventById(id);
+        MatchDTO match = matchService.getMatchById(event.getMatchId());
+        teamAccessValidator.validateAnyTeamOrAdmin(
+                principal,
+                match.getHomeTeam() != null ? match.getHomeTeam().getId() : null,
+                match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
+        );
+        return ResponseEntity.ok(event);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<BaseballPlayEventDTO>> getAll(
+            @RequestParam(value = "search", required = false) String search,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        log.info("Request to list softball play events with search: {}", search);
+
+        if (principal.getRole() == UserRole.ADMIN) {
+            return ResponseEntity.ok(playEventService.search(search));
+        }
+
+        if (search != null && search.startsWith("match:")) {
+            Long matchId = Long.parseLong(search.split(":", 2)[1].trim());
+            MatchDTO match = matchService.getMatchById(matchId);
+            teamAccessValidator.validateAnyTeamOrAdmin(
+                    principal,
+                    match.getHomeTeam() != null ? match.getHomeTeam().getId() : null,
+                    match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
+            );
+            return ResponseEntity.ok(playEventService.search(search));
+        }
+
+        if (principal.getTeamId() == null) {
+            return ResponseEntity.status(403).build();
+        }
+        return ResponseEntity.ok(playEventService.searchByTeam(principal.getTeamId()));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Map<String, Object>> update(
+            @PathVariable Long id,
+            @RequestBody BaseballPlayEventDTO dto,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        log.info("Request to update softball play event: {}", id);
+
+        if (principal.getRole() != UserRole.ADMIN && principal.getRole() != UserRole.MANAGER) {
+            return ResponseEntity.status(403).build();
+        }
+
+        BaseballPlayEventDTO existing = playEventService.getPlayEventById(id);
+        MatchDTO match = matchService.getMatchById(existing.getMatchId());
+        teamAccessValidator.validateAnyTeamOrAdmin(
+                principal,
+                match.getHomeTeam() != null ? match.getHomeTeam().getId() : null,
+                match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
+        );
+
+        try {
+            BaseballPlayEventDTO updated = playEventService.updatePlayEvent(id, dto);
+            return ResponseEntity.ok(Map.of(
+                    "message", "Softball play event updated successfully",
+                    "data", updated
+            ));
+        } catch (Exception e) {
+            log.error("Error updating softball play event {}: {}", id, e.getMessage());
+            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        log.info("Request to delete softball play event: {}", id);
+
+        if (principal.getRole() != UserRole.ADMIN && principal.getRole() != UserRole.MANAGER) {
+            return ResponseEntity.status(403).build();
+        }
+
+        BaseballPlayEventDTO existing = playEventService.getPlayEventById(id);
+        MatchDTO match = matchService.getMatchById(existing.getMatchId());
+        teamAccessValidator.validateAnyTeamOrAdmin(
+                principal,
+                match.getHomeTeam() != null ? match.getHomeTeam().getId() : null,
+                match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
+        );
+
+        try {
+            playEventService.deletePlayEvent(id);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            log.error("Error deleting softball play event {}: {}", id, e.getMessage());
+            return ResponseEntity.status(400).build();
+        }
+    }
+}

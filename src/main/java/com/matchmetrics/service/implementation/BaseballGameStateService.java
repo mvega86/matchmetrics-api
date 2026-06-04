@@ -2,6 +2,7 @@ package com.matchmetrics.service.implementation;
 
 import com.matchmetrics.domain.enums.BaseballGameStatus;
 import com.matchmetrics.domain.enums.InningHalf;
+import com.matchmetrics.domain.enums.SportType;
 import com.matchmetrics.exception.EntityNotFoundException;
 import com.matchmetrics.mapper.BaseballGameStateMapper;
 import com.matchmetrics.mapper.dto.BaseballGameStateDTO;
@@ -45,8 +46,10 @@ public class BaseballGameStateService implements IBaseballGameStateService {
         try {
             BaseballGameState gameState = mapper.toEntity(dto);
             gameState.setStatus(BaseballGameStatus.NOT_STARTED);
+            int totalInnings = gameState.getMatch().getSportType() == SportType.SOFTBALL ? 7 : 9;
+            gameState.setTotalInnings(totalInnings);
             gameState = gameStateRepository.save(gameState);
-            log.info("Baseball game state created successfully for match: {}", dto.getMatchId());
+            log.info("Game state created for match: {} ({} innings)", dto.getMatchId(), totalInnings);
             return mapper.toDTO(gameState);
         } catch (Exception e) {
             log.error("Error creating game state: {}", e.getMessage());

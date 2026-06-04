@@ -47,4 +47,6 @@ public class BaseballGameStateDTO {
 
     @NotNull(message = "Status is required.")
     private BaseballGameStatus status;
+
+    private Integer totalInnings;
 }
