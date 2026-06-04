@@ -6,10 +6,14 @@ import com.matchmetrics.domain.enums.InningHalf;
 import com.matchmetrics.domain.enums.UserRole;
 import com.matchmetrics.domain.enums.UserStatus;
 import com.matchmetrics.mapper.dto.BaseballPlayEventDTO;
+import com.matchmetrics.mapper.dto.MatchDTO;
+import com.matchmetrics.mapper.dto.TeamDTO;
 import com.matchmetrics.persistence.entity.AppUser;
 import com.matchmetrics.persistence.entity.Team;
 import com.matchmetrics.security.UserPrincipal;
 import com.matchmetrics.service.IBaseballPlayEventService;
+import com.matchmetrics.service.IMatchService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -19,7 +23,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Collections;
-import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -42,43 +45,33 @@ class BaseballPlayEventControllerTest {
     @MockitoBean
     private IBaseballPlayEventService playEventService;
 
-    // -------------------------
-    // GET /api/v1/baseball/play-events
-    // -------------------------
+    @MockitoBean
+    private IMatchService matchService;
 
-    @Test
-    void getAll_ShouldReturn401_WhenNotAuthenticated() throws Exception {
-        mockMvc.perform(get("/api/v1/baseball/play-events"))
-                .andExpect(status().isUnauthorized());
-    }
+    // Partido con homeTeam=1, awayTeam=2
+    @BeforeEach
+    void setupMatchMock() {
+        TeamDTO homeTeam = new TeamDTO();
+        homeTeam.setId(1L);
+        homeTeam.setName("Home Team");
+        homeTeam.setAcronym("HME");
+        homeTeam.setStadium("Home Stadium");
 
-    @Test
-    void getAll_ShouldAllowUserRole() throws Exception {
-        when(playEventService.search(anyString())).thenReturn(Collections.emptyList());
+        TeamDTO awayTeam = new TeamDTO();
+        awayTeam.setId(2L);
+        awayTeam.setName("Away Team");
+        awayTeam.setAcronym("AWY");
+        awayTeam.setStadium("Away Stadium");
 
-        mockMvc.perform(get("/api/v1/baseball/play-events")
-                        .param("search", "match:1")
-                        .with(user(principal(UserRole.USER, 1L))))
-                .andExpect(status().isOk());
-    }
+        MatchDTO match = new MatchDTO();
+        match.setHomeTeam(homeTeam);
+        match.setAwayTeam(awayTeam);
 
-    @Test
-    void getAll_ShouldAllowManagerRole() throws Exception {
-        when(playEventService.search(any())).thenReturn(Collections.emptyList());
+        when(matchService.getMatchById(anyLong())).thenReturn(match);
 
-        mockMvc.perform(get("/api/v1/baseball/play-events")
-                        .param("search", "match:1")
-                        .with(user(principal(UserRole.MANAGER, 1L))))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    void getAll_ShouldAllowAdminRole() throws Exception {
-        when(playEventService.search(any())).thenReturn(Collections.emptyList());
-
-        mockMvc.perform(get("/api/v1/baseball/play-events")
-                        .with(user(principal(UserRole.ADMIN, null))))
-                .andExpect(status().isOk());
+        BaseballPlayEventDTO existingEvent = sampleEventDTO();
+        existingEvent.setId(1L);
+        when(playEventService.getPlayEventById(anyLong())).thenReturn(existingEvent);
     }
 
     // -------------------------
@@ -103,7 +96,17 @@ class BaseballPlayEventControllerTest {
     }
 
     @Test
-    void create_ShouldAllowManagerRole() throws Exception {
+    void create_ShouldReturn403_WhenManagerFromDifferentTeam() throws Exception {
+        // MANAGER del equipo 3, pero el partido es entre equipos 1 y 2
+        mockMvc.perform(post("/api/v1/baseball/play-events")
+                        .with(user(principal(UserRole.MANAGER, 3L)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(sampleEventDTO())))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void create_ShouldAllowManagerOfParticipatingTeam() throws Exception {
         BaseballPlayEventDTO saved = sampleEventDTO();
         saved.setId(1L);
         when(playEventService.createPlayEvent(any())).thenReturn(saved);
@@ -129,6 +132,84 @@ class BaseballPlayEventControllerTest {
     }
 
     // -------------------------
+    // GET /api/v1/baseball/play-events/{id}
+    // -------------------------
+
+    @Test
+    void getById_ShouldReturn401_WhenNotAuthenticated() throws Exception {
+        mockMvc.perform(get("/api/v1/baseball/play-events/1"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getById_ShouldReturn403_WhenUserFromDifferentTeam() throws Exception {
+        mockMvc.perform(get("/api/v1/baseball/play-events/1")
+                        .with(user(principal(UserRole.USER, 3L))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getById_ShouldAllowUserOfParticipatingTeam() throws Exception {
+        mockMvc.perform(get("/api/v1/baseball/play-events/1")
+                        .with(user(principal(UserRole.USER, 1L))))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void getById_ShouldAllowAdminRole() throws Exception {
+        mockMvc.perform(get("/api/v1/baseball/play-events/1")
+                        .with(user(principal(UserRole.ADMIN, null))))
+                .andExpect(status().isOk());
+    }
+
+    // -------------------------
+    // GET /api/v1/baseball/play-events?search=match:X
+    // -------------------------
+
+    @Test
+    void getAll_ShouldReturn401_WhenNotAuthenticated() throws Exception {
+        mockMvc.perform(get("/api/v1/baseball/play-events"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getAll_ShouldReturn403_WhenManagerSearchesOtherTeamMatch() throws Exception {
+        // MANAGER del equipo 3 intenta ver eventos del partido entre equipos 1 y 2
+        mockMvc.perform(get("/api/v1/baseball/play-events")
+                        .param("search", "match:1")
+                        .with(user(principal(UserRole.MANAGER, 3L))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getAll_ShouldAllowManagerSearchingOwnMatch() throws Exception {
+        when(playEventService.search(anyString())).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/api/v1/baseball/play-events")
+                        .param("search", "match:1")
+                        .with(user(principal(UserRole.MANAGER, 1L))))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void getAll_AdminShouldGetAllWithoutFilter() throws Exception {
+        when(playEventService.search(any())).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/api/v1/baseball/play-events")
+                        .with(user(principal(UserRole.ADMIN, null))))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void getAll_ManagerWithoutSearchShouldGetOwnTeamEvents() throws Exception {
+        when(playEventService.searchByTeam(anyLong())).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/api/v1/baseball/play-events")
+                        .with(user(principal(UserRole.MANAGER, 1L))))
+                .andExpect(status().isOk());
+    }
+
+    // -------------------------
     // PUT /api/v1/baseball/play-events/{id}
     // -------------------------
 
@@ -150,7 +231,16 @@ class BaseballPlayEventControllerTest {
     }
 
     @Test
-    void update_ShouldAllowManagerRole() throws Exception {
+    void update_ShouldReturn403_WhenManagerFromDifferentTeam() throws Exception {
+        mockMvc.perform(put("/api/v1/baseball/play-events/1")
+                        .with(user(principal(UserRole.MANAGER, 3L)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void update_ShouldAllowManagerOfParticipatingTeam() throws Exception {
         BaseballPlayEventDTO updated = sampleEventDTO();
         updated.setId(1L);
         when(playEventService.updatePlayEvent(anyLong(), any())).thenReturn(updated);
@@ -193,7 +283,14 @@ class BaseballPlayEventControllerTest {
     }
 
     @Test
-    void delete_ShouldAllowManagerRole() throws Exception {
+    void delete_ShouldReturn403_WhenManagerFromDifferentTeam() throws Exception {
+        mockMvc.perform(delete("/api/v1/baseball/play-events/1")
+                        .with(user(principal(UserRole.MANAGER, 3L))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void delete_ShouldAllowManagerOfParticipatingTeam() throws Exception {
         mockMvc.perform(delete("/api/v1/baseball/play-events/1")
                         .with(user(principal(UserRole.MANAGER, 1L))))
                 .andExpect(status().isNoContent());

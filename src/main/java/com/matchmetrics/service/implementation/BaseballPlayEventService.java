@@ -72,6 +72,15 @@ public class BaseballPlayEventService implements IBaseballPlayEventService {
     }
 
     @Override
+    public List<BaseballPlayEventDTO> searchByTeam(Long teamId) {
+        log.info("Searching baseball play events for team: {}", teamId);
+        return repository.findByBattingTeamIdOrFieldingTeamIdOrderByCreatedAtAsc(teamId, teamId)
+                .stream()
+                .map(mapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     @Transactional
     public BaseballPlayEventDTO updatePlayEvent(Long id, BaseballPlayEventDTO dto) {
         log.info("Updating baseball play event: {}", id);

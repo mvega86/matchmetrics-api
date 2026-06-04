@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface BaseballPlayEventRepository extends JpaRepository<BaseballPlayEvent, Long> {
     List<BaseballPlayEvent> findAllByMatchIdOrderByCreatedAtAsc(Long matchId);
+    List<BaseballPlayEvent> findByBattingTeamIdOrFieldingTeamIdOrderByCreatedAtAsc(Long battingTeamId, Long fieldingTeamId);
 }

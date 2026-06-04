@@ -2,8 +2,11 @@ package com.matchmetrics.controller;
 
 import com.matchmetrics.domain.enums.UserRole;
 import com.matchmetrics.mapper.dto.BaseballPlayEventDTO;
+import com.matchmetrics.mapper.dto.MatchDTO;
+import com.matchmetrics.security.TeamAccessValidator;
 import com.matchmetrics.security.UserPrincipal;
 import com.matchmetrics.service.IBaseballPlayEventService;
+import com.matchmetrics.service.IMatchService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -20,9 +23,17 @@ import java.util.Map;
 public class BaseballPlayEventController {
 
     private final IBaseballPlayEventService playEventService;
+    private final IMatchService matchService;
+    private final TeamAccessValidator teamAccessValidator;
 
-    public BaseballPlayEventController(IBaseballPlayEventService playEventService) {
+    public BaseballPlayEventController(
+            IBaseballPlayEventService playEventService,
+            IMatchService matchService,
+            TeamAccessValidator teamAccessValidator
+    ) {
         this.playEventService = playEventService;
+        this.matchService = matchService;
+        this.teamAccessValidator = teamAccessValidator;
     }
 
     @PostMapping
@@ -36,6 +47,13 @@ public class BaseballPlayEventController {
             log.warn("User {} tried to create play event without permission", principal.getEmail());
             return ResponseEntity.status(403).build();
         }
+
+        MatchDTO match = matchService.getMatchById(dto.getMatchId());
+        teamAccessValidator.validateAnyTeamOrAdmin(
+                principal,
+                match.getHomeTeam() != null ? match.getHomeTeam().getId() : null,
+                match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
+        );
 
         try {
             BaseballPlayEventDTO created = playEventService.createPlayEvent(dto);
@@ -55,12 +73,15 @@ public class BaseballPlayEventController {
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         log.info("Request to get play event: {}", id);
-        try {
-            return ResponseEntity.ok(playEventService.getPlayEventById(id));
-        } catch (Exception e) {
-            log.error("Play event not found: {}", id);
-            return ResponseEntity.status(404).build();
-        }
+
+        BaseballPlayEventDTO event = playEventService.getPlayEventById(id);
+        MatchDTO match = matchService.getMatchById(event.getMatchId());
+        teamAccessValidator.validateAnyTeamOrAdmin(
+                principal,
+                match.getHomeTeam() != null ? match.getHomeTeam().getId() : null,
+                match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
+        );
+        return ResponseEntity.ok(event);
     }
 
     @GetMapping
@@ -69,7 +90,28 @@ public class BaseballPlayEventController {
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         log.info("Request to list play events with search: {}", search);
-        return ResponseEntity.ok(playEventService.search(search));
+
+        if (principal.getRole() == UserRole.ADMIN) {
+            return ResponseEntity.ok(playEventService.search(search));
+        }
+
+        // MANAGER/USER: si busca por partido concreto, validar acceso
+        if (search != null && search.startsWith("match:")) {
+            Long matchId = Long.parseLong(search.split(":", 2)[1].trim());
+            MatchDTO match = matchService.getMatchById(matchId);
+            teamAccessValidator.validateAnyTeamOrAdmin(
+                    principal,
+                    match.getHomeTeam() != null ? match.getHomeTeam().getId() : null,
+                    match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
+            );
+            return ResponseEntity.ok(playEventService.search(search));
+        }
+
+        // MANAGER/USER sin filtro: solo eventos de su equipo
+        if (principal.getTeamId() == null) {
+            return ResponseEntity.status(403).build();
+        }
+        return ResponseEntity.ok(playEventService.searchByTeam(principal.getTeamId()));
     }
 
     @PutMapping("/{id}")
@@ -84,6 +126,14 @@ public class BaseballPlayEventController {
             log.warn("User {} tried to update play event without permission", principal.getEmail());
             return ResponseEntity.status(403).build();
         }
+
+        BaseballPlayEventDTO existing = playEventService.getPlayEventById(id);
+        MatchDTO match = matchService.getMatchById(existing.getMatchId());
+        teamAccessValidator.validateAnyTeamOrAdmin(
+                principal,
+                match.getHomeTeam() != null ? match.getHomeTeam().getId() : null,
+                match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
+        );
 
         try {
             BaseballPlayEventDTO updated = playEventService.updatePlayEvent(id, dto);
@@ -108,6 +158,14 @@ public class BaseballPlayEventController {
             log.warn("User {} tried to delete play event without permission", principal.getEmail());
             return ResponseEntity.status(403).build();
         }
+
+        BaseballPlayEventDTO existing = playEventService.getPlayEventById(id);
+        MatchDTO match = matchService.getMatchById(existing.getMatchId());
+        teamAccessValidator.validateAnyTeamOrAdmin(
+                principal,
+                match.getHomeTeam() != null ? match.getHomeTeam().getId() : null,
+                match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
+        );
 
         try {
             playEventService.deletePlayEvent(id);
