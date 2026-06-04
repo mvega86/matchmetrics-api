@@ -6,10 +6,14 @@ import com.matchmetrics.domain.enums.InningHalf;
 import com.matchmetrics.domain.enums.UserRole;
 import com.matchmetrics.domain.enums.UserStatus;
 import com.matchmetrics.mapper.dto.BaseballGameStateDTO;
+import com.matchmetrics.mapper.dto.MatchDTO;
+import com.matchmetrics.mapper.dto.TeamDTO;
 import com.matchmetrics.persistence.entity.AppUser;
 import com.matchmetrics.persistence.entity.Team;
 import com.matchmetrics.security.UserPrincipal;
 import com.matchmetrics.service.IBaseballGameStateService;
+import com.matchmetrics.service.IMatchService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -38,6 +42,31 @@ class BaseballGameStateControllerTest {
     @MockitoBean
     private IBaseballGameStateService gameStateService;
 
+    @MockitoBean
+    private IMatchService matchService;
+
+    // Match con homeTeam=1, awayTeam=2
+    @BeforeEach
+    void setupMatchMock() {
+        TeamDTO homeTeam = new TeamDTO();
+        homeTeam.setId(1L);
+        homeTeam.setName("Home Team");
+        homeTeam.setAcronym("HME");
+        homeTeam.setStadium("Home Stadium");
+
+        TeamDTO awayTeam = new TeamDTO();
+        awayTeam.setId(2L);
+        awayTeam.setName("Away Team");
+        awayTeam.setAcronym("AWY");
+        awayTeam.setStadium("Away Stadium");
+
+        MatchDTO match = new MatchDTO();
+        match.setHomeTeam(homeTeam);
+        match.setAwayTeam(awayTeam);
+
+        when(matchService.getMatchById(anyLong())).thenReturn(match);
+    }
+
     // -------------------------
     // POST /api/v1/baseball/game-state
     // -------------------------
@@ -60,11 +89,22 @@ class BaseballGameStateControllerTest {
     }
 
     @Test
-    void create_ShouldAllowManagerRole() throws Exception {
+    void create_ShouldReturn403_WhenManagerFromDifferentTeam() throws Exception {
+        // MANAGER del equipo 3, pero el partido es entre equipos 1 y 2
+        mockMvc.perform(post("/api/v1/baseball/game-state")
+                        .with(user(principal(UserRole.MANAGER, 3L)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(sampleGameStateDTO())))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void create_ShouldAllowManagerOfParticipatingTeam() throws Exception {
         BaseballGameStateDTO saved = sampleGameStateDTO();
         saved.setId(1L);
         when(gameStateService.createGameState(any())).thenReturn(saved);
 
+        // MANAGER del equipo 1 (homeTeam del partido)
         mockMvc.perform(post("/api/v1/baseball/game-state")
                         .with(user(principal(UserRole.MANAGER, 1L)))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -96,7 +136,14 @@ class BaseballGameStateControllerTest {
     }
 
     @Test
-    void get_ShouldAllowUserRole() throws Exception {
+    void get_ShouldReturn403_WhenUserFromDifferentTeam() throws Exception {
+        mockMvc.perform(get("/api/v1/baseball/game-state/1")
+                        .with(user(principal(UserRole.USER, 3L))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void get_ShouldAllowUserOfParticipatingTeam() throws Exception {
         when(gameStateService.getGameStateByMatchId(anyLong())).thenReturn(sampleGameStateDTO());
 
         mockMvc.perform(get("/api/v1/baseball/game-state/1")
@@ -105,11 +152,20 @@ class BaseballGameStateControllerTest {
     }
 
     @Test
-    void get_ShouldAllowManagerRole() throws Exception {
+    void get_ShouldAllowManagerOfParticipatingTeam() throws Exception {
         when(gameStateService.getGameStateByMatchId(anyLong())).thenReturn(sampleGameStateDTO());
 
         mockMvc.perform(get("/api/v1/baseball/game-state/1")
-                        .with(user(principal(UserRole.MANAGER, 1L))))
+                        .with(user(principal(UserRole.MANAGER, 2L))))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void get_ShouldAllowAdminRole() throws Exception {
+        when(gameStateService.getGameStateByMatchId(anyLong())).thenReturn(sampleGameStateDTO());
+
+        mockMvc.perform(get("/api/v1/baseball/game-state/1")
+                        .with(user(principal(UserRole.ADMIN, null))))
                 .andExpect(status().isOk());
     }
 
@@ -135,7 +191,16 @@ class BaseballGameStateControllerTest {
     }
 
     @Test
-    void update_ShouldAllowManagerRole() throws Exception {
+    void update_ShouldReturn403_WhenManagerFromDifferentTeam() throws Exception {
+        mockMvc.perform(put("/api/v1/baseball/game-state/1")
+                        .with(user(principal(UserRole.MANAGER, 3L)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void update_ShouldAllowManagerOfParticipatingTeam() throws Exception {
         BaseballGameStateDTO updated = sampleGameStateDTO();
         when(gameStateService.updateGameState(anyLong(), any())).thenReturn(updated);
 
