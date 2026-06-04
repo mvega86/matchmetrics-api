@@ -1,5 +1,6 @@
 package com.matchmetrics.service.implementation;
 
+import com.matchmetrics.domain.enums.SportType;
 import com.matchmetrics.domain.enums.UserRole;
 import com.matchmetrics.domain.enums.UserStatus;
 import com.matchmetrics.mapper.dto.admin.PendingUserResponse;
@@ -84,15 +85,20 @@ public class AdminUserServiceImpl implements IAdminUserService {
 
         String cleanTeamName = requestedTeamName.trim();
 
+        SportType sportType = user.getRequestedSportType() != null
+                ? user.getRequestedSportType()
+                : SportType.FOOTBALL;
+
         return teamRepository.findByNameIgnoreCase(cleanTeamName)
-                .orElseGet(() -> createTeamFromRequestedName(cleanTeamName));
+                .orElseGet(() -> createTeamFromRequestedName(cleanTeamName, sportType));
     }
 
-    private Team createTeamFromRequestedName(String teamName) {
+    private Team createTeamFromRequestedName(String teamName, SportType sportType) {
         Team team = new Team();
         team.setName(teamName);
         team.setAcronym(buildAcronym(teamName));
         team.setStadium("Pendiente");
+        team.setSportType(sportType);
 
         return teamRepository.save(team);
     }
@@ -127,7 +133,8 @@ public class AdminUserServiceImpl implements IAdminUserService {
                 user.getStatus(),
                 teamId,
                 teamName,
-                user.getRequestedTeamName()
+                user.getRequestedTeamName(),
+                user.getRequestedSportType()
         );
     }
 }

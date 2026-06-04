@@ -1,5 +1,6 @@
 package com.matchmetrics.mapper.dto.auth;
 
+import com.matchmetrics.domain.enums.SportType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
@@ -22,4 +23,6 @@ public class RegisterRequest {
     private Long teamId;
 
     private String requestedTeamName;
+
+    private SportType requestedSportType;
 }

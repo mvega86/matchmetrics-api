@@ -1,6 +1,7 @@
 package com.matchmetrics.persistence.entity;
 
 import com.matchmetrics.domain.enums.AuthProvider;
+import com.matchmetrics.domain.enums.SportType;
 import com.matchmetrics.domain.enums.UserRole;
 import com.matchmetrics.domain.enums.UserStatus;
 import com.matchmetrics.persistence.audit.AuditModel;
@@ -45,4 +46,8 @@ public class AppUser extends AuditModel {
 
     @Column(name = "requested_team_name", length = 150)
     private String requestedTeamName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "requested_sport_type", length = 20)
+    private SportType requestedSportType;
 }

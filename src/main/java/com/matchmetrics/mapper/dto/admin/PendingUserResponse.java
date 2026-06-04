@@ -1,6 +1,7 @@
 package com.matchmetrics.mapper.dto.admin;
 
 import com.matchmetrics.domain.enums.AuthProvider;
+import com.matchmetrics.domain.enums.SportType;
 import com.matchmetrics.domain.enums.UserRole;
 import com.matchmetrics.domain.enums.UserStatus;
 import lombok.AllArgsConstructor;
@@ -19,4 +20,5 @@ public class PendingUserResponse {
     private Long teamId;
     private String teamName;
     private String requestedTeamName;
+    private SportType requestedSportType;
 }

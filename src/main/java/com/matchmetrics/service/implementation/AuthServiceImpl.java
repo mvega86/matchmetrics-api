@@ -46,6 +46,7 @@ public class AuthServiceImpl implements IAuthService {
             user.setTeam(team);
         } else {
             user.setRequestedTeamName(request.getRequestedTeamName());
+            user.setRequestedSportType(request.getRequestedSportType());
         }
 
         AppUser savedUser = appUserRepository.save(user);
