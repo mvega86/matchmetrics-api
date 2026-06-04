@@ -1,5 +1,6 @@
 package com.matchmetrics.persistence.repository;
 
+import com.matchmetrics.domain.enums.SportType;
 import com.matchmetrics.persistence.entity.Statistic;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -11,5 +12,7 @@ public interface StatisticRepository extends JpaRepository<Statistic, Long> {
     boolean existsByName(String name);
     List<Statistic> findAllByOrderByNameAsc();
     List<Statistic> findByNameContainingIgnoreCaseOrderByNameAsc(String name);
+    List<Statistic> findBySportTypeOrderByNameAsc(SportType sportType);
+    boolean existsByNameAndSportType(String name, SportType sportType);
 }
 

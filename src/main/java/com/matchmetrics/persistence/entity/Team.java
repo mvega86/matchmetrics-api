@@ -1,6 +1,7 @@
 package com.matchmetrics.persistence.entity;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.matchmetrics.domain.enums.SportType;
 import com.matchmetrics.persistence.audit.AuditModel;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -27,6 +28,10 @@ public class Team extends AuditModel {
 
     @Column(name = "stadium", nullable = false)
     private String stadium;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "sport_type", nullable = false)
+    private SportType sportType = SportType.FOOTBALL;
 
     @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference

@@ -1,5 +1,6 @@
 package com.matchmetrics.service.implementation;
 
+import com.matchmetrics.domain.enums.SportType;
 import com.matchmetrics.exception.EntityNotFoundException;
 import com.matchmetrics.mapper.StatisticMapper;
 import com.matchmetrics.mapper.dto.StatisticDTO;
@@ -28,25 +29,30 @@ public class StatisticService implements IStatisticService {
     @Override
     @Transactional
     public StatisticDTO createStatistic(StatisticDTO statisticDTO) {
-        // Validar si la estadística ya existe por nombre
-        if (statisticRepository.existsByName(statisticDTO.getName())) {
-            throw new RuntimeException("Statistic with name '" + statisticDTO.getName() + "' already exists.");
+        SportType sport = statisticDTO.getSportType() != null ? statisticDTO.getSportType() : SportType.FOOTBALL;
+        if (statisticRepository.existsByNameAndSportType(statisticDTO.getName(), sport)) {
+            throw new RuntimeException("Statistic with name '" + statisticDTO.getName() + "' already exists for sport " + sport + ".");
         }
 
-        Statistic statistic = new Statistic();
-        statistic.setName(statisticDTO.getName());
-        statistic.setDescription(statisticDTO.getDescription());
-        statistic.setUnit(statisticDTO.getUnit());
+        Statistic statistic = statisticMapper.toEntity(statisticDTO);
         return statisticMapper.toDTO(statisticRepository.save(statistic));
     }
 
     @Override
     public List<StatisticDTO> search(String search) {
+        if (search != null && search.startsWith("sport:")) {
+            String sportName = search.split(":", 2)[1].trim();
+            SportType sportType = SportType.valueOf(sportName.toUpperCase());
+            log.info("Searching statistics by sport: {}", sportType);
+            return statisticRepository.findBySportTypeOrderByNameAsc(sportType)
+                    .stream()
+                    .map(statisticMapper::toDTO)
+                    .toList();
+        }
+
         if (search != null && search.startsWith("name:")) {
             String name = search.split(":", 2)[1].trim();
-
             log.info("Searching statistics by name: {}", name);
-
             return statisticRepository.findByNameContainingIgnoreCaseOrderByNameAsc(name)
                     .stream()
                     .map(statisticMapper::toDTO)
@@ -54,7 +60,6 @@ public class StatisticService implements IStatisticService {
         }
 
         log.info("Getting all statistics...");
-
         return statisticRepository.findAllByOrderByNameAsc()
                 .stream()
                 .map(statisticMapper::toDTO)
@@ -75,6 +80,9 @@ public class StatisticService implements IStatisticService {
         statistic.setName(statisticDTO.getName());
         statistic.setDescription(statisticDTO.getDescription());
         statistic.setUnit(statisticDTO.getUnit());
+        if (statisticDTO.getSportType() != null) {
+            statistic.setSportType(statisticDTO.getSportType());
+        }
 
         return statisticMapper.toDTO(statisticRepository.save(statistic));
     }

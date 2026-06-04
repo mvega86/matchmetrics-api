@@ -1,6 +1,7 @@
 package com.matchmetrics.mapper;
 
 import com.matchmetrics.domain.enums.MatchState;
+import com.matchmetrics.domain.enums.SportType;
 import com.matchmetrics.mapper.dto.MatchDTO;
 import com.matchmetrics.persistence.entity.Match;
 import org.springframework.context.annotation.Lazy;
@@ -19,6 +20,7 @@ public class MatchMapper {
     public Match toEntity(MatchDTO dto) {
         Match match = new Match();
         match.setId(dto.getId());
+        match.setSportType(dto.getSportType() != null ? dto.getSportType() : SportType.FOOTBALL);
         match.setLocation(dto.getLocation());
         match.setState(dto.getState() != null ? dto.getState() : MatchState.PENDING);
         match.setPhase(dto.getPhase());
@@ -40,6 +42,7 @@ public class MatchMapper {
 
         MatchDTO matchDTO = new MatchDTO();
         matchDTO.setId(match.getId());
+        matchDTO.setSportType(match.getSportType());
         matchDTO.setLocation(match.getLocation());
         matchDTO.setState(match.getState());
         matchDTO.setPhase(match.getPhase());

@@ -1,5 +1,6 @@
 package com.matchmetrics.mapper.dto;
 
+import com.matchmetrics.domain.enums.SportType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -20,5 +21,7 @@ public class StatisticDTO {
 
     @Size(max = 10, message = "The unit of measurement cannot exceed 10 characters.")
     private String unit;
+
+    private SportType sportType;
 }
 

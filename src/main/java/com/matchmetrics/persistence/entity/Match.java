@@ -3,6 +3,7 @@ package com.matchmetrics.persistence.entity;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.matchmetrics.domain.enums.MatchPhase;
 import com.matchmetrics.domain.enums.MatchState;
+import com.matchmetrics.domain.enums.SportType;
 import com.matchmetrics.persistence.audit.AuditModel;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -22,6 +23,10 @@ public class Match extends AuditModel {
     private Long id;
 
     private String location;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "sport_type", nullable = false)
+    private SportType sportType = SportType.FOOTBALL;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

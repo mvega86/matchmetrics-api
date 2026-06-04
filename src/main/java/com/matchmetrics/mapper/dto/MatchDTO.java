@@ -2,6 +2,7 @@ package com.matchmetrics.mapper.dto;
 
 import com.matchmetrics.domain.enums.MatchPhase;
 import com.matchmetrics.domain.enums.MatchState;
+import com.matchmetrics.domain.enums.SportType;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -16,6 +17,8 @@ import java.time.LocalDateTime;
 public class MatchDTO {
 
     private Long id;
+
+    private SportType sportType;
 
     @NotNull(message = "Location match is required.")
     private String location;

@@ -1,5 +1,6 @@
 package com.matchmetrics.mapper.dto;
 
+import com.matchmetrics.domain.enums.SportType;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
@@ -16,4 +17,6 @@ public class TeamDTO {
     private String acronym;
     @NotBlank(message = "Stadium is required")
     private String stadium;
+
+    private SportType sportType;
 }

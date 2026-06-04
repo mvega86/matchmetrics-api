@@ -1,5 +1,6 @@
 package com.matchmetrics.persistence.entity;
 
+import com.matchmetrics.domain.enums.SportType;
 import com.matchmetrics.persistence.audit.AuditModel;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -25,5 +26,9 @@ public class Statistic extends AuditModel {
 
     @Column(length = 10)
     private String unit;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "sport_type", nullable = false)
+    private SportType sportType = SportType.FOOTBALL;
 }
 

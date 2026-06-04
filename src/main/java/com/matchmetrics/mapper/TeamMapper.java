@@ -1,5 +1,6 @@
 package com.matchmetrics.mapper;
 
+import com.matchmetrics.domain.enums.SportType;
 import com.matchmetrics.mapper.dto.TeamDTO;
 import com.matchmetrics.persistence.entity.Team;
 import org.springframework.stereotype.Component;
@@ -15,6 +16,7 @@ public class TeamMapper {
         dto.setName(team.getName());
         dto.setAcronym(team.getAcronym());
         dto.setStadium(team.getStadium());
+        dto.setSportType(team.getSportType());
         return dto;
     }
 
@@ -24,6 +26,7 @@ public class TeamMapper {
         team.setName(dto.getName());
         team.setAcronym(dto.getAcronym());
         team.setStadium(dto.getStadium());
+        team.setSportType(dto.getSportType() != null ? dto.getSportType() : SportType.FOOTBALL);
         return team;
     }
 }
