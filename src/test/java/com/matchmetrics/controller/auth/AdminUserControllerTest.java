@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -215,5 +216,12 @@ class AdminUserControllerTest {
 
         AppUser updatedAdmin = appUserRepository.findById(admin.getId()).orElseThrow();
         org.junit.jupiter.api.Assertions.assertEquals(UserStatus.APPROVED, updatedAdmin.getStatus());
+    }
+
+    @Test
+    void generatePassword() {
+        System.out.println(
+                new BCryptPasswordEncoder().encode("1234")
+        );
     }
 }
