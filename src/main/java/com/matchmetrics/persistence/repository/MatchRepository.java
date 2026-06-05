@@ -11,4 +11,8 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
     List<Match> findAllByOrderByStartFirstTimeAsc();
 
     List<Match> findByHomeTeamIdOrAwayTeamIdOrderByStartFirstTimeAsc(Long homeTeamId, Long awayTeamId);
+
+    List<Match> findByTournamentIdOrderByStartFirstTimeAsc(Long tournamentId);
+
+    List<Match> findByTournamentIsNullOrderByStartFirstTimeAsc();
 }

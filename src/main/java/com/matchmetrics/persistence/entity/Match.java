@@ -12,6 +12,7 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 @Entity
 @Getter
@@ -52,6 +53,11 @@ public class Match extends AuditModel {
     private LocalDateTime endFirstExtraTime;
     private LocalDateTime startSecondExtraTime;
     private LocalDateTime endSecondExtraTime;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tournament_id")
+    @JsonBackReference
+    private Tournament tournament;
 
     @OneToMany(mappedBy = "match", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference

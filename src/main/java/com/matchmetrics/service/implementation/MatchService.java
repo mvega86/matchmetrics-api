@@ -70,21 +70,27 @@ public class MatchService implements IMatchService {
     public List<MatchDTO> search(String search) {
         if (search != null && search.startsWith("team:")) {
             Long teamId = Long.parseLong(search.split(":", 2)[1]);
-
             log.info("Searching matches by team: {}", teamId);
-
             return matchRepository.findByHomeTeamIdOrAwayTeamIdOrderByStartFirstTimeAsc(teamId, teamId)
-                    .stream()
-                    .map(matchMapper::toDTO)
-                    .toList();
+                    .stream().map(matchMapper::toDTO).toList();
+        }
+
+        if (search != null && search.startsWith("tournament:")) {
+            Long tournamentId = Long.parseLong(search.split(":", 2)[1].trim());
+            log.info("Searching matches by tournament: {}", tournamentId);
+            return matchRepository.findByTournamentIdOrderByStartFirstTimeAsc(tournamentId)
+                    .stream().map(matchMapper::toDTO).toList();
+        }
+
+        if ("friendly".equalsIgnoreCase(search)) {
+            log.info("Searching friendly matches (no tournament)");
+            return matchRepository.findByTournamentIsNullOrderByStartFirstTimeAsc()
+                    .stream().map(matchMapper::toDTO).toList();
         }
 
         log.info("Searching all matches...");
-
         return matchRepository.findAllByOrderByStartFirstTimeAsc()
-                .stream()
-                .map(matchMapper::toDTO)
-                .toList();
+                .stream().map(matchMapper::toDTO).toList();
     }
 
     @Override

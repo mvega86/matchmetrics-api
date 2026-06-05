@@ -4,6 +4,8 @@ import com.matchmetrics.domain.enums.MatchState;
 import com.matchmetrics.domain.enums.SportType;
 import com.matchmetrics.mapper.dto.MatchDTO;
 import com.matchmetrics.persistence.entity.Match;
+import com.matchmetrics.persistence.entity.Tournament;
+import com.matchmetrics.persistence.repository.TournamentRepository;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
@@ -12,11 +14,14 @@ public class MatchMapper {
 
     private final TeamMapper teamMapper;
     private final PlayerMatchMapper playerMatchMapper;
+    private final TournamentRepository tournamentRepository;
 
-    public MatchMapper(TeamMapper teamMapper,@Lazy PlayerMatchMapper playerMatchMapper) {
+    public MatchMapper(TeamMapper teamMapper, @Lazy PlayerMatchMapper playerMatchMapper, TournamentRepository tournamentRepository) {
         this.teamMapper = teamMapper;
         this.playerMatchMapper = playerMatchMapper;
+        this.tournamentRepository = tournamentRepository;
     }
+
     public Match toEntity(MatchDTO dto) {
         Match match = new Match();
         match.setId(dto.getId());
@@ -34,6 +39,10 @@ public class MatchMapper {
         match.setEndFirstExtraTime(dto.getEndFirstExtraTime());
         match.setStartSecondExtraTime(dto.getStartSecondExtraTime());
         match.setEndSecondExtraTime(dto.getEndSecondExtraTime());
+        if (dto.getTournamentId() != null) {
+            Tournament tournament = tournamentRepository.findById(dto.getTournamentId()).orElse(null);
+            match.setTournament(tournament);
+        }
         return match;
     }
 
@@ -56,7 +65,10 @@ public class MatchMapper {
         matchDTO.setEndFirstExtraTime(match.getEndFirstExtraTime());
         matchDTO.setStartSecondExtraTime(match.getStartSecondExtraTime());
         matchDTO.setEndSecondExtraTime(match.getEndSecondExtraTime());
-
+        if (match.getTournament() != null) {
+            matchDTO.setTournamentId(match.getTournament().getId());
+            matchDTO.setTournamentName(match.getTournament().getName());
+        }
         return matchDTO;
     }
 }
