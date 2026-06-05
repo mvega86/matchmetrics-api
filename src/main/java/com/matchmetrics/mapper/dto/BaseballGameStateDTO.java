@@ -45,6 +45,10 @@ public class BaseballGameStateDTO {
     private Long secondBasePlayerMatchId;
     private Long thirdBasePlayerMatchId;
 
+    private Boolean clearFirstBase;
+    private Boolean clearSecondBase;
+    private Boolean clearThirdBase;
+
     @NotNull(message = "Status is required.")
     private BaseballGameStatus status;
 

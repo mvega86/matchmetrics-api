@@ -104,13 +104,19 @@ public class BaseballGameStateService implements IBaseballGameStateService {
         if (dto.getAwayScore() != null) {
             gameState.setAwayScore(dto.getAwayScore());
         }
-        if (dto.getFirstBasePlayerMatchId() != null) {
+        if (Boolean.TRUE.equals(dto.getClearFirstBase())) {
+            gameState.setFirstBasePlayerMatch(null);
+        } else if (dto.getFirstBasePlayerMatchId() != null) {
             gameState.setFirstBasePlayerMatch(playerMatchRepository.findById(dto.getFirstBasePlayerMatchId()).orElse(null));
         }
-        if (dto.getSecondBasePlayerMatchId() != null) {
+        if (Boolean.TRUE.equals(dto.getClearSecondBase())) {
+            gameState.setSecondBasePlayerMatch(null);
+        } else if (dto.getSecondBasePlayerMatchId() != null) {
             gameState.setSecondBasePlayerMatch(playerMatchRepository.findById(dto.getSecondBasePlayerMatchId()).orElse(null));
         }
-        if (dto.getThirdBasePlayerMatchId() != null) {
+        if (Boolean.TRUE.equals(dto.getClearThirdBase())) {
+            gameState.setThirdBasePlayerMatch(null);
+        } else if (dto.getThirdBasePlayerMatchId() != null) {
             gameState.setThirdBasePlayerMatch(playerMatchRepository.findById(dto.getThirdBasePlayerMatchId()).orElse(null));
         }
         if (dto.getStatus() != null) {
