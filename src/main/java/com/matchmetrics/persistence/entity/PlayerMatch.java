@@ -32,9 +32,14 @@ public class PlayerMatch extends AuditModel {
         private Player player;
 
         @Column(name = "in_")
-        private LocalDateTime inTime; // Exact date and time of entry
+        private LocalDateTime inTime;
         @Column(name = "out")
-        private LocalDateTime outTime; // Exact date and time of departure
+        private LocalDateTime outTime;
 
+        @Column(name = "batting_order")
+        private Integer battingOrder;
+
+        @Column(name = "field_position", length = 10)
+        private String fieldPosition;
 }
 

@@ -46,6 +46,8 @@ public class PlayerMatchMapper {
 
         dto.setInTime(playerMatch.getInTime());
         dto.setOutTime(playerMatch.getOutTime());
+        dto.setBattingOrder(playerMatch.getBattingOrder());
+        dto.setFieldPosition(playerMatch.getFieldPosition());
 
         return dto;
     }

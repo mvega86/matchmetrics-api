@@ -25,5 +25,8 @@ public class PlayerMatchDTO {
 
     private String inMinuteFormatted;
     private String outMinuteFormatted;
+
+    private Integer battingOrder;
+    private String fieldPosition;
 }
 
