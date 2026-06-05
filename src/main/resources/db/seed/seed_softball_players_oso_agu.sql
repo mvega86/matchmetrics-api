@@ -112,17 +112,17 @@ BEGIN
   --   8   │ Gómez       │ C
   --   9   │ Herrera     │ P   (lanzadora)
 
-  INSERT INTO player_match (match_id, team_id, player_id, in_, batting_order, field_position)
+  INSERT INTO player_match (match_id, player_id, in_, batting_order, field_position)
   VALUES
-    (v_match, v_oso, p_oso2, now(), 1, 'SS'),
-    (v_match, v_oso, p_oso1, now(), 2, '2B'),
-    (v_match, v_oso, p_oso3, now(), 3, 'LF'),
-    (v_match, v_oso, p_oso9, now(), 4, '1B'),
-    (v_match, v_oso, p_oso5, now(), 5, '3B'),
-    (v_match, v_oso, p_oso6, now(), 6, 'CF'),
-    (v_match, v_oso, p_oso4, now(), 7, 'RF'),
-    (v_match, v_oso, p_oso7, now(), 8, 'C'),
-    (v_match, v_oso, p_oso8, now(), 9, 'P');
+    (v_match, p_oso2, now(), 1, 'SS'),
+    (v_match, p_oso1, now(), 2, '2B'),
+    (v_match, p_oso3, now(), 3, 'LF'),
+    (v_match, p_oso9, now(), 4, '1B'),
+    (v_match, p_oso5, now(), 5, '3B'),
+    (v_match, p_oso6, now(), 6, 'CF'),
+    (v_match, p_oso4, now(), 7, 'RF'),
+    (v_match, p_oso7, now(), 8, 'C'),
+    (v_match, p_oso8, now(), 9, 'P');
 
   -- ── player_match AGU — away team ──────────────────────────
   -- Orden │ Jugadora    │ Posición
@@ -136,17 +136,17 @@ BEGIN
   --   8   │ Gil         │ C
   --   9   │ Patiño      │ P   (lanzadora)
 
-  INSERT INTO player_match (match_id, team_id, player_id, in_, batting_order, field_position)
+  INSERT INTO player_match (match_id, player_id, in_, batting_order, field_position)
   VALUES
-    (v_match, v_agu, p_agu1, now(), 1, 'CF'),
-    (v_match, v_agu, p_agu3, now(), 2, 'SS'),
-    (v_match, v_agu, p_agu2, now(), 3, '3B'),
-    (v_match, v_agu, p_agu5, now(), 4, '1B'),
-    (v_match, v_agu, p_agu4, now(), 5, 'LF'),
-    (v_match, v_agu, p_agu6, now(), 6, '2B'),
-    (v_match, v_agu, p_agu9, now(), 7, 'RF'),
-    (v_match, v_agu, p_agu8, now(), 8, 'C'),
-    (v_match, v_agu, p_agu7, now(), 9, 'P');
+    (v_match, p_agu1, now(), 1, 'CF'),
+    (v_match, p_agu3, now(), 2, 'SS'),
+    (v_match, p_agu2, now(), 3, '3B'),
+    (v_match, p_agu5, now(), 4, '1B'),
+    (v_match, p_agu4, now(), 5, 'LF'),
+    (v_match, p_agu6, now(), 6, '2B'),
+    (v_match, p_agu9, now(), 7, 'RF'),
+    (v_match, p_agu8, now(), 8, 'C'),
+    (v_match, p_agu7, now(), 9, 'P');
 
   RAISE NOTICE 'Seed completado: 18 jugadoras insertadas en el partido %', v_match;
 END $$;
