@@ -162,4 +162,11 @@ public class BaseballPlayEventService implements IBaseballPlayEventService {
                 .orElseThrow(() -> new EntityNotFoundException("Play event not found: " + id));
         repository.delete(event);
     }
+
+    @Override
+    @Transactional
+    public void deleteAllByMatchId(Long matchId) {
+        log.info("Deleting all baseball play events for match: {}", matchId);
+        repository.deleteAllByMatchId(matchId);
+    }
 }

@@ -147,6 +147,27 @@ public class BaseballPlayEventController {
         }
     }
 
+    @DeleteMapping("/match/{matchId}")
+    public ResponseEntity<Void> deleteByMatch(
+            @PathVariable Long matchId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        log.info("Request to delete all play events for match: {}", matchId);
+
+        if (principal.getRole() != UserRole.ADMIN) {
+            log.warn("User {} tried to bulk-delete play events without ADMIN role", principal.getEmail());
+            return ResponseEntity.status(403).build();
+        }
+
+        try {
+            playEventService.deleteAllByMatchId(matchId);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            log.error("Error deleting play events for match {}: {}", matchId, e.getMessage());
+            return ResponseEntity.status(400).build();
+        }
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @PathVariable Long id,

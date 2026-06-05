@@ -11,4 +11,5 @@ public interface IBaseballPlayEventService {
     List<BaseballPlayEventDTO> searchByTeam(Long teamId);
     BaseballPlayEventDTO updatePlayEvent(Long id, BaseballPlayEventDTO dto);
     void deletePlayEvent(Long id);
+    void deleteAllByMatchId(Long matchId);
 }
