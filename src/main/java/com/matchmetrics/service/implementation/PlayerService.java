@@ -60,6 +60,16 @@ public class PlayerService implements IPlayerService {
 
     @Override
     public List<PlayerDTO> searchPlayers(String search) {
+        if (search != null && search.startsWith("sport:")) {
+            String sportStr = search.split(":", 2)[1].trim().toUpperCase();
+            try {
+                var sportType = com.matchmetrics.domain.enums.SportType.valueOf(sportStr);
+                return playerRepository.findByTeam_SportTypeOrderByFullNameAsc(sportType)
+                        .stream().map(playerMapper::toDTO).collect(Collectors.toList());
+            } catch (IllegalArgumentException e) {
+                return List.of();
+            }
+        }
         if (search != null && search.startsWith("team:")) {
             Long teamId = Long.parseLong(search.split(":")[1]);
             log.info("Searching players by {}...", search);

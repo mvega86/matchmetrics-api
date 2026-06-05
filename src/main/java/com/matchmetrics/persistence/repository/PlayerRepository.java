@@ -10,4 +10,5 @@ import java.util.List;
 public interface PlayerRepository extends JpaRepository<Player, Long> {
     List<Player> findAllByOrderByUpdatedAtDesc();
     List<Player> findByTeamIdOrderByFullNameAsc(Long teamId);
+    List<Player> findByTeam_SportTypeOrderByFullNameAsc(com.matchmetrics.domain.enums.SportType sportType);
 }

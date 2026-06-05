@@ -19,4 +19,8 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
     Optional<Team> findByNameIgnoreCaseAndSportType(String name, SportType sportType);
 
     List<Team> findByNameContainingIgnoreCase(String name);
+
+    List<Team> findBySportTypeOrderByNameAsc(SportType sportType);
+
+    List<Team> findByNameContainingIgnoreCaseAndSportType(String name, SportType sportType);
 }

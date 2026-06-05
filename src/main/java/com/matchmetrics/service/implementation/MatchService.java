@@ -68,6 +68,17 @@ public class MatchService implements IMatchService {
 
     @Override
     public List<MatchDTO> search(String search) {
+        if (search != null && search.startsWith("sport:")) {
+            String sportStr = search.split(":", 2)[1].trim().toUpperCase();
+            try {
+                var sportType = com.matchmetrics.domain.enums.SportType.valueOf(sportStr);
+                return matchRepository.findBySportTypeOrderByStartFirstTimeAsc(sportType)
+                        .stream().map(matchMapper::toDTO).toList();
+            } catch (IllegalArgumentException e) {
+                return List.of();
+            }
+        }
+
         if (search != null && search.startsWith("team:")) {
             Long teamId = Long.parseLong(search.split(":", 2)[1]);
             log.info("Searching matches by team: {}", teamId);
