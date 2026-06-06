@@ -90,25 +90,7 @@ public class SoftballPlayEventController {
     ) {
         log.info("Request to list softball play events with search: {}", search);
 
-        if (principal.getRole() == UserRole.ADMIN) {
-            return ResponseEntity.ok(playEventService.search(search));
-        }
-
-        if (search != null && search.startsWith("match:")) {
-            Long matchId = Long.parseLong(search.split(":", 2)[1].trim());
-            MatchDTO match = matchService.getMatchById(matchId);
-            teamAccessValidator.validateAnyTeamOrAdmin(
-                    principal,
-                    match.getHomeTeam() != null ? match.getHomeTeam().getId() : null,
-                    match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
-            );
-            return ResponseEntity.ok(playEventService.search(search));
-        }
-
-        if (principal.getTeamId() == null) {
-            return ResponseEntity.status(403).build();
-        }
-        return ResponseEntity.ok(playEventService.searchByTeam(principal.getTeamId()));
+        return ResponseEntity.ok(playEventService.search(search));
     }
 
     @PutMapping("/{id}")

@@ -53,9 +53,6 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/register").permitAll()
                         .requestMatchers("/api/v1/auth/login").permitAll()
 
-                        // Necesario para el registro
-                        .requestMatchers(HttpMethod.GET, "/api/v1/teams").permitAll()
-
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 
                         // Escritura de Teams solo ADMIN
@@ -68,15 +65,19 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/teams").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/teams/**").hasRole("ADMIN")
 
+                        // Lectura pública — no requiere autenticación
                         .requestMatchers(HttpMethod.GET,
-                                "/api/v1/players/**",
                                 "/api/v1/teams/**",
                                 "/api/v1/matches/**",
+                                "/api/v1/players/**",
                                 "/api/v1/statistics/**",
                                 "/api/v1/player-statistics/**",
                                 "/api/v1/players-match/**",
-                                "/api/v1/field-zones/**"
-                        ).hasAnyRole("ADMIN", "MANAGER", "USER")
+                                "/api/v1/field-zones/**",
+                                "/api/v1/tournaments/**",
+                                "/api/v1/baseball/**",
+                                "/api/v1/softball/**"
+                        ).permitAll()
 
                         .requestMatchers(HttpMethod.POST,
                                 "/api/v1/players/**",

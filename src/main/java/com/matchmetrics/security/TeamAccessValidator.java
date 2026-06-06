@@ -12,6 +12,8 @@ public class TeamAccessValidator {
             UserPrincipal principal,
             Long resourceTeamId
     ) {
+        if (principal == null) return;
+
         if (principal.getRole() == UserRole.ADMIN) {
             return;
         }
@@ -30,6 +32,8 @@ public class TeamAccessValidator {
             Long firstTeamId,
             Long secondTeamId
     ) {
+        if (principal == null) return;
+
         if (principal.getRole() == UserRole.ADMIN) {
             return;
         }

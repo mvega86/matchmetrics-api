@@ -57,18 +57,7 @@ public class MatchController {
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         log.info("Request to fetch matches with search: {}", search);
-
-        if (principal.getRole() == UserRole.ADMIN) {
-            return ResponseEntity.ok(matchService.search(search));
-        }
-
-        if (principal.getTeamId() == null) {
-            return ResponseEntity.status(403).build();
-        }
-
-        return ResponseEntity.ok(
-                matchService.searchByTeam(search, principal.getTeamId())
-        );
+        return ResponseEntity.ok(matchService.search(search));
     }
 
     @GetMapping("/{matchId}")
