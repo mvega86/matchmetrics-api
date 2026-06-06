@@ -58,6 +58,10 @@ public class BaseballGameState extends AuditModel {
     @JoinColumn(name = "third_base_player_match_id")
     private PlayerMatch thirdBasePlayerMatch;
 
+    @ManyToOne
+    @JoinColumn(name = "current_batter_player_match_id")
+    private PlayerMatch currentBatterPlayerMatch;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private BaseballGameStatus status = BaseballGameStatus.NOT_STARTED;

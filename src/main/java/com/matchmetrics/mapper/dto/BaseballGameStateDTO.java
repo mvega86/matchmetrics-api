@@ -44,8 +44,10 @@ public class BaseballGameStateDTO {
     private Long firstBasePlayerMatchId;
     private Long secondBasePlayerMatchId;
     private Long thirdBasePlayerMatchId;
+    private Long currentBatterPlayerMatchId;
 
     private Boolean clearFirstBase;
+    private Boolean clearCurrentBatter;
     private Boolean clearSecondBase;
     private Boolean clearThirdBase;
 

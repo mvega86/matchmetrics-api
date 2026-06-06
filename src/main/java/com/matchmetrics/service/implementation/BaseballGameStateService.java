@@ -128,6 +128,14 @@ public class BaseballGameStateService implements IBaseballGameStateService {
             }
             gameState.setThirdBasePlayerMatch(playerMatchRepository.findById(dto.getThirdBasePlayerMatchId()).orElse(null));
         }
+        if (Boolean.TRUE.equals(dto.getClearCurrentBatter())) {
+            gameState.setCurrentBatterPlayerMatch(null);
+        } else if (dto.getCurrentBatterPlayerMatchId() != null) {
+            if (!playerMatchRepository.existsByIdAndMatchId(dto.getCurrentBatterPlayerMatchId(), matchId)) {
+                throw new IllegalArgumentException("PlayerMatch " + dto.getCurrentBatterPlayerMatchId() + " does not belong to match " + matchId);
+            }
+            gameState.setCurrentBatterPlayerMatch(playerMatchRepository.findById(dto.getCurrentBatterPlayerMatchId()).orElse(null));
+        }
         if (dto.getStatus() != null) {
             gameState.setStatus(dto.getStatus());
         }

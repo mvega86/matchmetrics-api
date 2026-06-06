@@ -33,6 +33,7 @@ public class BaseballGameStateMapper {
         dto.setFirstBasePlayerMatchId(entity.getFirstBasePlayerMatch() != null ? entity.getFirstBasePlayerMatch().getId() : null);
         dto.setSecondBasePlayerMatchId(entity.getSecondBasePlayerMatch() != null ? entity.getSecondBasePlayerMatch().getId() : null);
         dto.setThirdBasePlayerMatchId(entity.getThirdBasePlayerMatch() != null ? entity.getThirdBasePlayerMatch().getId() : null);
+        dto.setCurrentBatterPlayerMatchId(entity.getCurrentBatterPlayerMatch() != null ? entity.getCurrentBatterPlayerMatch().getId() : null);
         dto.setStatus(entity.getStatus());
         dto.setTotalInnings(entity.getTotalInnings());
         return dto;
