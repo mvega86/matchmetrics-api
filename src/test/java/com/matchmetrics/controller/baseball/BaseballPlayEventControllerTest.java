@@ -136,9 +136,9 @@ class BaseballPlayEventControllerTest {
     // -------------------------
 
     @Test
-    void getById_ShouldReturn401_WhenNotAuthenticated() throws Exception {
+    void getById_ShouldBePublic_WhenNotAuthenticated() throws Exception {
         mockMvc.perform(get("/api/v1/baseball/play-events/1"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -167,18 +167,20 @@ class BaseballPlayEventControllerTest {
     // -------------------------
 
     @Test
-    void getAll_ShouldReturn401_WhenNotAuthenticated() throws Exception {
+    void getAll_ShouldBePublic_WhenNotAuthenticated() throws Exception {
+        when(playEventService.search(any())).thenReturn(Collections.emptyList());
         mockMvc.perform(get("/api/v1/baseball/play-events"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isOk());
     }
 
     @Test
-    void getAll_ShouldReturn403_WhenManagerSearchesOtherTeamMatch() throws Exception {
-        // MANAGER del equipo 3 intenta ver eventos del partido entre equipos 1 y 2
+    void getAll_ShouldReturn200_WhenManagerSearchesAnyMatch() throws Exception {
+        when(playEventService.search(anyString())).thenReturn(Collections.emptyList());
+        // Reads are now public — managers can query any match's events
         mockMvc.perform(get("/api/v1/baseball/play-events")
                         .param("search", "match:1")
                         .with(user(principal(UserRole.MANAGER, 3L))))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk());
     }
 
     @Test

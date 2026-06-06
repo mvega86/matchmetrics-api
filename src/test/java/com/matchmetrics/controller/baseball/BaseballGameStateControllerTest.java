@@ -130,9 +130,10 @@ class BaseballGameStateControllerTest {
     // -------------------------
 
     @Test
-    void get_ShouldReturn401_WhenNotAuthenticated() throws Exception {
+    void get_ShouldBePublic_WhenNotAuthenticated() throws Exception {
+        when(gameStateService.getGameStateByMatchId(anyLong())).thenReturn(sampleGameStateDTO());
         mockMvc.perform(get("/api/v1/baseball/game-state/1"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isOk());
     }
 
     @Test

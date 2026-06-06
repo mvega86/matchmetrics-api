@@ -41,21 +41,15 @@ public class PlayerController {
     ) {
         log.info("Request to get all players with search: {}", search);
 
-        if (principal.getRole() == UserRole.ADMIN) {
-            List<PlayerDTO> playerDTOList = playerService.searchPlayers(search);
-            return ResponseEntity.ok(playerDTOList);
+        if (principal == null || principal.getRole() == UserRole.ADMIN) {
+            return ResponseEntity.ok(playerService.searchPlayers(search));
         }
 
         if (principal.getTeamId() == null) {
             return ResponseEntity.status(403).build();
         }
 
-        List<PlayerDTO> playerDTOList = playerService.searchPlayersByTeam(
-                search,
-                principal.getTeamId()
-        );
-
-        return ResponseEntity.ok(playerDTOList);
+        return ResponseEntity.ok(playerService.searchPlayersByTeam(search, principal.getTeamId()));
     }
 
     @GetMapping("/{id}")

@@ -56,9 +56,10 @@ class EndpointSecurityTest {
     private FieldZoneService fieldZoneService;
 
     @Test
-    void playersGet_ShouldReturn401_WhenUserIsNotAuthenticated() throws Exception {
+    void playersGet_ShouldBePublic_WhenUserIsNotAuthenticated() throws Exception {
+        when(playerService.searchPlayers(any())).thenReturn(Collections.emptyList());
         mockMvc.perform(get("/api/v1/players"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -175,9 +176,10 @@ class EndpointSecurityTest {
     }
 
     @Test
-    void matchesGet_ShouldReturn401_WhenUserIsNotAuthenticated() throws Exception {
+    void matchesGet_ShouldBePublic_WhenUserIsNotAuthenticated() throws Exception {
+        when(matchService.search(any())).thenReturn(Collections.emptyList());
         mockMvc.perform(get("/api/v1/matches"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isOk());
     }
 
     @Test
