@@ -304,6 +304,40 @@ class BaseballPlayEventControllerTest {
     }
 
     // -------------------------
+    // POST — player-match integrity validation
+    // -------------------------
+
+    @Test
+    void create_ShouldReturn400_WhenBatterDoesNotBelongToMatch() throws Exception {
+        when(playEventService.createPlayEvent(any()))
+                .thenThrow(new IllegalArgumentException("Batter PlayerMatch 99 does not belong to match 1"));
+
+        BaseballPlayEventDTO dto = sampleEventDTO();
+        dto.setBatterPlayerMatchId(99L);
+
+        mockMvc.perform(post("/api/v1/baseball/play-events")
+                        .with(user(principal(UserRole.ADMIN, null)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void create_ShouldReturn400_WhenPitcherDoesNotBelongToMatch() throws Exception {
+        when(playEventService.createPlayEvent(any()))
+                .thenThrow(new IllegalArgumentException("Pitcher PlayerMatch 99 does not belong to match 1"));
+
+        BaseballPlayEventDTO dto = sampleEventDTO();
+        dto.setPitcherPlayerMatchId(99L);
+
+        mockMvc.perform(post("/api/v1/baseball/play-events")
+                        .with(user(principal(UserRole.ADMIN, null)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest());
+    }
+
+    // -------------------------
     // Helpers
     // -------------------------
 

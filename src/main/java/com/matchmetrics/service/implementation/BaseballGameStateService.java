@@ -107,16 +107,25 @@ public class BaseballGameStateService implements IBaseballGameStateService {
         if (Boolean.TRUE.equals(dto.getClearFirstBase())) {
             gameState.setFirstBasePlayerMatch(null);
         } else if (dto.getFirstBasePlayerMatchId() != null) {
+            if (!playerMatchRepository.existsByIdAndMatchId(dto.getFirstBasePlayerMatchId(), matchId)) {
+                throw new IllegalArgumentException("PlayerMatch " + dto.getFirstBasePlayerMatchId() + " does not belong to match " + matchId);
+            }
             gameState.setFirstBasePlayerMatch(playerMatchRepository.findById(dto.getFirstBasePlayerMatchId()).orElse(null));
         }
         if (Boolean.TRUE.equals(dto.getClearSecondBase())) {
             gameState.setSecondBasePlayerMatch(null);
         } else if (dto.getSecondBasePlayerMatchId() != null) {
+            if (!playerMatchRepository.existsByIdAndMatchId(dto.getSecondBasePlayerMatchId(), matchId)) {
+                throw new IllegalArgumentException("PlayerMatch " + dto.getSecondBasePlayerMatchId() + " does not belong to match " + matchId);
+            }
             gameState.setSecondBasePlayerMatch(playerMatchRepository.findById(dto.getSecondBasePlayerMatchId()).orElse(null));
         }
         if (Boolean.TRUE.equals(dto.getClearThirdBase())) {
             gameState.setThirdBasePlayerMatch(null);
         } else if (dto.getThirdBasePlayerMatchId() != null) {
+            if (!playerMatchRepository.existsByIdAndMatchId(dto.getThirdBasePlayerMatchId(), matchId)) {
+                throw new IllegalArgumentException("PlayerMatch " + dto.getThirdBasePlayerMatchId() + " does not belong to match " + matchId);
+            }
             gameState.setThirdBasePlayerMatch(playerMatchRepository.findById(dto.getThirdBasePlayerMatchId()).orElse(null));
         }
         if (dto.getStatus() != null) {

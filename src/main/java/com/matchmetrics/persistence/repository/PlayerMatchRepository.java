@@ -19,5 +19,7 @@ public interface PlayerMatchRepository extends JpaRepository<PlayerMatch, Long> 
     List<PlayerMatch> findByPlayerTeamId(Long teamId);
 
     List<PlayerMatch> findByMatchIdAndPlayerTeamId(Long matchId, Long teamId);
+
+    boolean existsByIdAndMatchId(Long id, Long matchId);
 }
 

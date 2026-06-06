@@ -255,6 +255,25 @@ class BaseballGameStateControllerTest {
     }
 
     // -------------------------
+    // PUT — player-match integrity validation
+    // -------------------------
+
+    @Test
+    void update_ShouldReturn400_WhenBasePlayerDoesNotBelongToMatch() throws Exception {
+        when(gameStateService.updateGameState(anyLong(), any()))
+                .thenThrow(new IllegalArgumentException("PlayerMatch 99 does not belong to match 1"));
+
+        BaseballGameStateDTO dto = sampleGameStateDTO();
+        dto.setFirstBasePlayerMatchId(99L);
+
+        mockMvc.perform(put("/api/v1/baseball/game-state/1")
+                        .with(user(principal(UserRole.ADMIN, null)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest());
+    }
+
+    // -------------------------
     // Helpers
     // -------------------------
 

@@ -41,6 +41,17 @@ public class BaseballPlayEventService implements IBaseballPlayEventService {
     public BaseballPlayEventDTO createPlayEvent(BaseballPlayEventDTO dto) {
         log.info("Creating baseball play event for match: {}", dto.getMatchId());
 
+        if (dto.getBatterPlayerMatchId() != null &&
+                !playerMatchRepository.existsByIdAndMatchId(dto.getBatterPlayerMatchId(), dto.getMatchId())) {
+            throw new IllegalArgumentException(
+                    "Batter PlayerMatch " + dto.getBatterPlayerMatchId() + " does not belong to match " + dto.getMatchId());
+        }
+        if (dto.getPitcherPlayerMatchId() != null &&
+                !playerMatchRepository.existsByIdAndMatchId(dto.getPitcherPlayerMatchId(), dto.getMatchId())) {
+            throw new IllegalArgumentException(
+                    "Pitcher PlayerMatch " + dto.getPitcherPlayerMatchId() + " does not belong to match " + dto.getMatchId());
+        }
+
         BaseballPlayEvent entity = mapper.toEntity(dto);
         entity = repository.save(entity);
         return mapper.toDTO(entity);
