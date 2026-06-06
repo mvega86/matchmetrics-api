@@ -47,7 +47,7 @@ public class PlayerMatchController {
     ) {
         log.info("Logger: Request to get all players match with search: {}", search);
 
-        if (principal.getRole() == UserRole.ADMIN) {
+        if (principal == null || principal.getRole() == UserRole.ADMIN) {
             return ResponseEntity.ok(playerMatchService.search(search));
         }
 
