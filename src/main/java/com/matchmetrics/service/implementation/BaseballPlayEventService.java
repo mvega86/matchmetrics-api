@@ -120,10 +120,16 @@ public class BaseballPlayEventService implements IBaseballPlayEventService {
                     .orElseThrow(() -> new IllegalArgumentException("Fielding team not found.")));
         }
         if (dto.getBatterPlayerMatchId() != null) {
+            if (!playerMatchRepository.existsByIdAndMatchId(dto.getBatterPlayerMatchId(), event.getMatch().getId())) {
+                throw new IllegalArgumentException("Batter PlayerMatch does not belong to this match.");
+            }
             event.setBatterPlayerMatch(playerMatchRepository.findById(dto.getBatterPlayerMatchId())
                     .orElseThrow(() -> new IllegalArgumentException("Batter player match not found.")));
         }
         if (dto.getPitcherPlayerMatchId() != null) {
+            if (!playerMatchRepository.existsByIdAndMatchId(dto.getPitcherPlayerMatchId(), event.getMatch().getId())) {
+                throw new IllegalArgumentException("Pitcher PlayerMatch does not belong to this match.");
+            }
             event.setPitcherPlayerMatch(playerMatchRepository.findById(dto.getPitcherPlayerMatchId())
                     .orElseThrow(() -> new IllegalArgumentException("Pitcher player match not found.")));
         }

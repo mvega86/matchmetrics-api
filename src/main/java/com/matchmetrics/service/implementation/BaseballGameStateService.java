@@ -204,6 +204,15 @@ public class BaseballGameStateService implements IBaseballGameStateService {
         log.info("Updating bases for match: {}", matchId);
         BaseballGameState gameState = getGameStateEntity(matchId);
 
+        if (firstBasePlayerId != null && !playerMatchRepository.existsByIdAndMatchId(firstBasePlayerId, matchId)) {
+            throw new IllegalArgumentException("PlayerMatch " + firstBasePlayerId + " does not belong to match " + matchId);
+        }
+        if (secondBasePlayerId != null && !playerMatchRepository.existsByIdAndMatchId(secondBasePlayerId, matchId)) {
+            throw new IllegalArgumentException("PlayerMatch " + secondBasePlayerId + " does not belong to match " + matchId);
+        }
+        if (thirdBasePlayerId != null && !playerMatchRepository.existsByIdAndMatchId(thirdBasePlayerId, matchId)) {
+            throw new IllegalArgumentException("PlayerMatch " + thirdBasePlayerId + " does not belong to match " + matchId);
+        }
         gameState.setFirstBasePlayerMatch(firstBasePlayerId != null ? playerMatchRepository.findById(firstBasePlayerId).orElse(null) : null);
         gameState.setSecondBasePlayerMatch(secondBasePlayerId != null ? playerMatchRepository.findById(secondBasePlayerId).orElse(null) : null);
         gameState.setThirdBasePlayerMatch(thirdBasePlayerId != null ? playerMatchRepository.findById(thirdBasePlayerId).orElse(null) : null);
