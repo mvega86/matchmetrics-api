@@ -85,7 +85,9 @@ public class SecurityConfig {
                                 "/api/v1/statistics/**",
                                 "/api/v1/player-statistics/**",
                                 "/api/v1/players-match/**",
-                                "/api/v1/field-zones/**"
+                                "/api/v1/field-zones/**",
+                                "/api/v1/baseball/**",
+                                "/api/v1/softball/**"
                         ).hasAnyRole("ADMIN", "MANAGER")
 
                         .requestMatchers(HttpMethod.PUT,
@@ -94,7 +96,9 @@ public class SecurityConfig {
                                 "/api/v1/statistics/**",
                                 "/api/v1/player-statistics/**",
                                 "/api/v1/players-match/**",
-                                "/api/v1/field-zones/**"
+                                "/api/v1/field-zones/**",
+                                "/api/v1/baseball/**",
+                                "/api/v1/softball/**"
                         ).hasAnyRole("ADMIN", "MANAGER")
 
                         .requestMatchers(HttpMethod.PATCH,
@@ -103,7 +107,9 @@ public class SecurityConfig {
                                 "/api/v1/statistics/**",
                                 "/api/v1/player-statistics/**",
                                 "/api/v1/players-match/**",
-                                "/api/v1/field-zones/**"
+                                "/api/v1/field-zones/**",
+                                "/api/v1/baseball/**",
+                                "/api/v1/softball/**"
                         ).hasAnyRole("ADMIN", "MANAGER")
 
                         .requestMatchers(HttpMethod.DELETE,
@@ -112,7 +118,9 @@ public class SecurityConfig {
                                 "/api/v1/statistics/**",
                                 "/api/v1/player-statistics/**",
                                 "/api/v1/players-match/**",
-                                "/api/v1/field-zones/**"
+                                "/api/v1/field-zones/**",
+                                "/api/v1/baseball/**",
+                                "/api/v1/softball/**"
                         ).hasAnyRole("ADMIN", "MANAGER")
 
                         .anyRequest().authenticated()
