@@ -24,6 +24,8 @@ public class PlayerMatchMapper {
         playerMatch.setPlayer(playerMapper.toEntity(dto.getPlayer(), team));
         playerMatch.setInTime(dto.getInTime());
         playerMatch.setOutTime(dto.getOutTime());
+        playerMatch.setBattingOrder(dto.getBattingOrder());
+        playerMatch.setFieldPosition(dto.getFieldPosition());
         return playerMatch;
     }
 
