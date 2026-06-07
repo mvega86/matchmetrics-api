@@ -128,6 +128,9 @@ public class BaseballGameStateService implements IBaseballGameStateService {
             }
             gameState.setThirdBasePlayerMatch(playerMatchRepository.findById(dto.getThirdBasePlayerMatchId()).orElse(null));
         }
+        if (dto.getPitchCount() != null) {
+            gameState.setPitchCount(Math.max(0, dto.getPitchCount()));
+        }
         if (Boolean.TRUE.equals(dto.getClearCurrentBatter())) {
             gameState.setCurrentBatterPlayerMatch(null);
         } else if (dto.getCurrentBatterPlayerMatchId() != null) {

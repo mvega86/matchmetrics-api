@@ -62,6 +62,9 @@ public class BaseballGameState extends AuditModel {
     @JoinColumn(name = "current_batter_player_match_id")
     private PlayerMatch currentBatterPlayerMatch;
 
+    @Column(name = "pitch_count", nullable = false)
+    private Integer pitchCount = 0;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private BaseballGameStatus status = BaseballGameStatus.NOT_STARTED;

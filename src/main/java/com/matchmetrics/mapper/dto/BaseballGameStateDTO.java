@@ -27,19 +27,19 @@ public class BaseballGameStateDTO {
     private InningHalf inningHalf;
 
     @Min(value = 0, message = "Outs cannot be negative.")
-    private Integer outs = 0;
+    private Integer outs;
 
     @Min(value = 0, message = "Balls cannot be negative.")
-    private Integer balls = 0;
+    private Integer balls;
 
     @Min(value = 0, message = "Strikes cannot be negative.")
-    private Integer strikes = 0;
+    private Integer strikes;
 
     @Min(value = 0, message = "Home score cannot be negative.")
-    private Integer homeScore = 0;
+    private Integer homeScore;
 
     @Min(value = 0, message = "Away score cannot be negative.")
-    private Integer awayScore = 0;
+    private Integer awayScore;
 
     private Long firstBasePlayerMatchId;
     private Long secondBasePlayerMatchId;
@@ -50,6 +50,8 @@ public class BaseballGameStateDTO {
     private Boolean clearCurrentBatter;
     private Boolean clearSecondBase;
     private Boolean clearThirdBase;
+
+    private Integer pitchCount;
 
     @NotNull(message = "Status is required.")
     private BaseballGameStatus status;
