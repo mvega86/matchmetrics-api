@@ -126,24 +126,25 @@ public class PlayerMatchService implements IPlayerMatchService {
     @Override
     @Transactional
     public PlayerMatchDTO updatePlayerMatch(PlayerMatchDTO playerMatchDTO) {
-        playerMatchRepository.findById(playerMatchDTO.getId())
+        PlayerMatch existing = playerMatchRepository.findById(playerMatchDTO.getId())
                 .orElseThrow(() -> {
                     log.error("Logger: PlayerMatch id not found: {}", playerMatchDTO.getId());
                     return new EntityNotFoundException("PlayerMatch not found");
                 });
 
-        Team team  = teamRepository.findById(playerMatchDTO.getPlayer().getTeamId())
-                .orElseThrow(() -> {
-                    log.error("Logger: Team id not found: {}", playerMatchDTO.getPlayer().getTeamId());
-                    return new EntityNotFoundException("Team not found");
-                });
+        log.info("Logger: Updating playerMatch ID: {}", playerMatchDTO.getId());
 
-        log.info("Logger: Updating out time for playerMatch ID: {}", playerMatchDTO.getId());
+        // Patch only the fields that change during live game management.
+        // Loading the managed entity avoids detached-object merge issues with
+        // nested Player/Match associations when the DTO is reconstructed from
+        // the frontend payload.
+        existing.setBattingOrder(playerMatchDTO.getBattingOrder());
+        existing.setFieldPosition(playerMatchDTO.getFieldPosition());
+        if (playerMatchDTO.getInTime() != null) existing.setInTime(playerMatchDTO.getInTime());
+        if (playerMatchDTO.getOutTime() != null) existing.setOutTime(playerMatchDTO.getOutTime());
 
-        PlayerMatch playerMatch = playerMatchMapper.toEntity(playerMatchDTO, team);
-
-        playerMatchRepository.save(playerMatch);
-        return playerMatchMapper.toDTO(playerMatch);
+        playerMatchRepository.save(existing);
+        return playerMatchMapper.toDTO(existing);
     }
 
     public void delete(Long id) {
