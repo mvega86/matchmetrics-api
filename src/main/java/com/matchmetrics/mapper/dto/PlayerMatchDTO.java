@@ -28,5 +28,6 @@ public class PlayerMatchDTO {
 
     private Integer battingOrder;
     private String fieldPosition;
+    private Boolean fieldPositionOnly;
 }
 

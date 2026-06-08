@@ -132,18 +132,20 @@ public class PlayerMatchService implements IPlayerMatchService {
                     return new EntityNotFoundException("PlayerMatch not found");
                 });
 
-        log.info("Logger: Updating playerMatch ID: {}", playerMatchDTO.getId());
+        boolean positionOnly = Boolean.TRUE.equals(playerMatchDTO.getFieldPositionOnly());
+        log.info("Logger: Updating playerMatch ID: {} | DTO fieldPosition='{}' battingOrder={} fieldPositionOnly={}",
+            playerMatchDTO.getId(), playerMatchDTO.getFieldPosition(), playerMatchDTO.getBattingOrder(), positionOnly);
 
-        // Patch only the fields that change during live game management.
-        // Loading the managed entity avoids detached-object merge issues with
-        // nested Player/Match associations when the DTO is reconstructed from
-        // the frontend payload.
-        existing.setBattingOrder(playerMatchDTO.getBattingOrder());
         existing.setFieldPosition(playerMatchDTO.getFieldPosition());
+        if (!positionOnly) {
+            existing.setBattingOrder(playerMatchDTO.getBattingOrder());
+        }
         if (playerMatchDTO.getInTime() != null) existing.setInTime(playerMatchDTO.getInTime());
         if (playerMatchDTO.getOutTime() != null) existing.setOutTime(playerMatchDTO.getOutTime());
 
         playerMatchRepository.save(existing);
+        log.info("Logger: After save, ID: {} | fieldPosition='{}' battingOrder={}",
+            existing.getId(), existing.getFieldPosition(), existing.getBattingOrder());
         return playerMatchMapper.toDTO(existing);
     }
 
