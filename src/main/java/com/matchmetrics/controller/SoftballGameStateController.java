@@ -119,6 +119,36 @@ public class SoftballGameStateController {
         }
     }
 
+    @PostMapping("/{matchId}/rebuild")
+    public ResponseEntity<Map<String, Object>> rebuild(
+            @PathVariable Long matchId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        log.info("Request to rebuild softball game state from events for match: {}", matchId);
+
+        if (principal.getRole() != UserRole.ADMIN && principal.getRole() != UserRole.MANAGER) {
+            return ResponseEntity.status(403).build();
+        }
+
+        MatchDTO match = matchService.getMatchById(matchId);
+        teamAccessValidator.validateAnyTeamOrAdmin(
+                principal,
+                match.getHomeTeam() != null ? match.getHomeTeam().getId() : null,
+                match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
+        );
+
+        try {
+            BaseballGameStateDTO rebuilt = gameStateService.rebuildGameStateFromEvents(matchId);
+            return ResponseEntity.ok(Map.of(
+                    "message", "Softball game state rebuilt from events successfully",
+                    "data", rebuilt
+            ));
+        } catch (Exception e) {
+            log.error("Error rebuilding softball game state: {}", e.getMessage());
+            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @DeleteMapping("/{matchId}")
     public ResponseEntity<Void> delete(
             @PathVariable Long matchId,

@@ -1,5 +1,6 @@
 package com.matchmetrics.service.implementation;
 
+import com.matchmetrics.domain.enums.BaseballEventType;
 import com.matchmetrics.domain.enums.BaseballGameStatus;
 import com.matchmetrics.domain.enums.InningHalf;
 import com.matchmetrics.domain.enums.SportType;
@@ -7,28 +8,44 @@ import com.matchmetrics.exception.EntityNotFoundException;
 import com.matchmetrics.mapper.BaseballGameStateMapper;
 import com.matchmetrics.mapper.dto.BaseballGameStateDTO;
 import com.matchmetrics.persistence.entity.BaseballGameState;
+import com.matchmetrics.persistence.entity.BaseballPlayEvent;
 import com.matchmetrics.persistence.entity.PlayerMatch;
 import com.matchmetrics.persistence.repository.BaseballGameStateRepository;
+import com.matchmetrics.persistence.repository.BaseballPlayEventRepository;
 import com.matchmetrics.persistence.repository.PlayerMatchRepository;
 import com.matchmetrics.service.IBaseballGameStateService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Set;
+
 @Slf4j
 @Service
 public class BaseballGameStateService implements IBaseballGameStateService {
 
+    private static final Set<BaseballEventType> AT_BAT_ENDING = Set.of(
+        BaseballEventType.SINGLE, BaseballEventType.DOUBLE, BaseballEventType.TRIPLE,
+        BaseballEventType.HOME_RUN, BaseballEventType.WALK, BaseballEventType.STRIKEOUT,
+        BaseballEventType.OUT, BaseballEventType.DOUBLE_PLAY, BaseballEventType.TRIPLE_PLAY,
+        BaseballEventType.HIT_BY_PITCH, BaseballEventType.ERROR,
+        BaseballEventType.SACRIFICE_FLY, BaseballEventType.SACRIFICE_BUNT
+    );
+
     private final BaseballGameStateRepository gameStateRepository;
+    private final BaseballPlayEventRepository playEventRepository;
     private final PlayerMatchRepository playerMatchRepository;
     private final BaseballGameStateMapper mapper;
 
     public BaseballGameStateService(
             BaseballGameStateRepository gameStateRepository,
+            BaseballPlayEventRepository playEventRepository,
             PlayerMatchRepository playerMatchRepository,
             BaseballGameStateMapper mapper
     ) {
         this.gameStateRepository = gameStateRepository;
+        this.playEventRepository = playEventRepository;
         this.playerMatchRepository = playerMatchRepository;
         this.mapper = mapper;
     }
@@ -81,8 +98,8 @@ public class BaseballGameStateService implements IBaseballGameStateService {
             gameState.setInningHalf(dto.getInningHalf());
         }
         if (dto.getOuts() != null) {
-            if (dto.getOuts() < 0 || dto.getOuts() > 3) {
-                throw new IllegalArgumentException("Outs must be between 0 and 3");
+            if (dto.getOuts() < 0 || dto.getOuts() > 2) {
+                throw new IllegalArgumentException("Outs must be between 0 and 2");
             }
             gameState.setOuts(dto.getOuts());
         }
@@ -171,9 +188,9 @@ public class BaseballGameStateService implements IBaseballGameStateService {
     @Transactional
     public BaseballGameStateDTO updateOuts(Long matchId, Integer outs) {
         log.info("Updating outs for match: {} to: {}", matchId, outs);
-        if (outs < 0 || outs > 3) {
+        if (outs < 0 || outs > 2) {
             log.error("Invalid outs value: {}", outs);
-            throw new IllegalArgumentException("Outs must be between 0 and 3");
+            throw new IllegalArgumentException("Outs must be between 0 and 2");
         }
         BaseballGameState gameState = getGameStateEntity(matchId);
         gameState.setOuts(outs);
@@ -250,6 +267,71 @@ public class BaseballGameStateService implements IBaseballGameStateService {
         BaseballGameState gameState = getGameStateEntity(matchId);
         gameState.setStatus(BaseballGameStatus.FINISHED);
         gameState = gameStateRepository.save(gameState);
+        return mapper.toDTO(gameState);
+    }
+
+    @Override
+    @Transactional
+    public BaseballGameStateDTO rebuildGameStateFromEvents(Long matchId) {
+        log.info("Rebuilding game state from events for match: {}", matchId);
+        BaseballGameState gameState = getGameStateEntity(matchId);
+        List<BaseballPlayEvent> events =
+            playEventRepository.findAllByMatchIdOrderByCreatedAtAsc(matchId);
+
+        if (events.isEmpty()) {
+            return mapper.toDTO(gameState);
+        }
+
+        // Reconstruct scores
+        int awayScore = 0, homeScore = 0;
+        for (BaseballPlayEvent ev : events) {
+            int runs = ev.getRunsScored() != null ? ev.getRunsScored() : 0;
+            if (runs != 0) {
+                if (ev.getInningHalf() == InningHalf.TOP) awayScore += runs;
+                else homeScore += runs;
+            }
+        }
+        gameState.setAwayScore(Math.max(0, awayScore));
+        gameState.setHomeScore(Math.max(0, homeScore));
+
+        // Reconstruct inning / outs from at-bat-ending events (not needed for FINISHED games)
+        if (gameState.getStatus() != BaseballGameStatus.FINISHED) {
+            int currentInning = 1;
+            InningHalf currentHalf = InningHalf.TOP;
+            int currentOuts = 0;
+
+            for (BaseballPlayEvent ev : events) {
+                if (!AT_BAT_ENDING.contains(ev.getEventType())) continue;
+                int outs = ev.getOutsOnPlay() != null ? ev.getOutsOnPlay() : 0;
+                if (outs <= 0) outs = 1; // every at-bat-ending event with no explicit outs still counts as 1
+                currentOuts += outs;
+                if (currentOuts >= 3) {
+                    currentOuts = 0;
+                    if (currentHalf == InningHalf.TOP) {
+                        currentHalf = InningHalf.BOTTOM;
+                    } else {
+                        currentHalf = InningHalf.TOP;
+                        currentInning++;
+                    }
+                }
+            }
+
+            int maxInnings = gameState.getTotalInnings() != null ? gameState.getTotalInnings() : 9;
+            gameState.setCurrentInning(Math.min(currentInning, maxInnings));
+            gameState.setInningHalf(currentHalf);
+            gameState.setOuts(Math.min(currentOuts, 2));
+            gameState.setBalls(0);
+            gameState.setStrikes(0);
+            // Clear bases — they cannot be reliably reconstructed without full runner tracking
+            gameState.setFirstBasePlayerMatch(null);
+            gameState.setSecondBasePlayerMatch(null);
+            gameState.setThirdBasePlayerMatch(null);
+        }
+
+        gameState = gameStateRepository.save(gameState);
+        log.info("Rebuilt game state for match {}: inning={} {}, outs={}, score={}-{}",
+            matchId, gameState.getCurrentInning(), gameState.getInningHalf(),
+            gameState.getOuts(), gameState.getAwayScore(), gameState.getHomeScore());
         return mapper.toDTO(gameState);
     }
 

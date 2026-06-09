@@ -15,4 +15,5 @@ public interface IBaseballGameStateService {
     BaseballGameStateDTO updateScore(Long matchId, Integer homeScore, Integer awayScore);
     BaseballGameStateDTO finishGame(Long matchId);
     void deleteGameState(Long matchId);
+    BaseballGameStateDTO rebuildGameStateFromEvents(Long matchId);
 }
