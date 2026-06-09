@@ -292,6 +292,112 @@ public class BaseballGameStateService implements IBaseballGameStateService {
         return mapper.toDTO(gameState);
     }
 
+    /**
+     * Simulates runner advancement through all events to reconstruct base occupancy.
+     * Limitations:
+     *   - Runner advancement on hits is approximated (conservative: 1B runner advances one base per hit).
+     *   - Current batter cannot be reconstructed without the full batting-order lineup, so it is set to null.
+     *   - Pitcher is not stored in game state and is therefore not reconstructed here.
+     */
+    private void reconstructBases(BaseballGameState gameState, List<BaseballPlayEvent> events) {
+        PlayerMatch onFirst = null, onSecond = null, onThird = null;
+        int currentOuts = 0;
+
+        for (BaseballPlayEvent ev : events) {
+            PlayerMatch batter = ev.getBatterPlayerMatch();
+            BaseballEventType type = ev.getEventType();
+            int outsOnPlay = ev.getOutsOnPlay() != null ? ev.getOutsOnPlay() : 0;
+
+            switch (type) {
+                case HOME_RUN -> onFirst = onSecond = onThird = null;
+                case TRIPLE -> {
+                    onFirst = null;
+                    onSecond = null;
+                    onThird = batter;
+                }
+                case DOUBLE -> {
+                    // 3B/2B runners score; 1B runner advances to 3B; batter to 2B
+                    PlayerMatch old1B = onFirst;
+                    onFirst = null;
+                    onSecond = batter;
+                    onThird = old1B;
+                }
+                case SINGLE, ERROR -> {
+                    // 3B runner scores; 2B→3B; 1B→2B; batter to 1B
+                    PlayerMatch old1B = onFirst, old2B = onSecond;
+                    onFirst = batter;
+                    onSecond = old1B;
+                    onThird = old2B;
+                }
+                case WALK, HIT_BY_PITCH -> {
+                    if (onFirst != null) {
+                        // Forced advance chain
+                        PlayerMatch old1B = onFirst, old2B = onSecond;
+                        onFirst = batter;
+                        onSecond = old1B;
+                        if (old2B != null) {
+                            onThird = old2B; // 2B forced to 3B; old 3B scores
+                        }
+                    } else {
+                        onFirst = batter;
+                    }
+                }
+                case SACRIFICE_FLY -> onThird = null; // 3B runner scores on sac fly
+                case DOUBLE_PLAY -> {
+                    // Batter + 1B runner are typical victims
+                    onFirst = null;
+                    outsOnPlay = Math.max(outsOnPlay, 2);
+                }
+                case TRIPLE_PLAY -> {
+                    onFirst = null;
+                    onSecond = null;
+                    outsOnPlay = Math.max(outsOnPlay, 3);
+                }
+                case CAUGHT_STEALING -> {
+                    // Runner is out; most common: 1B attempting steal of 2B
+                    if (onFirst != null) onFirst = null;
+                    else if (onSecond != null) onSecond = null;
+                    outsOnPlay = Math.max(outsOnPlay, 1);
+                    currentOuts += outsOnPlay;
+                    if (currentOuts >= 3) {
+                        currentOuts = 0;
+                        onFirst = onSecond = onThird = null;
+                    }
+                    continue; // not in AT_BAT_ENDING; processed above
+                }
+                case STOLEN_BASE -> {
+                    // Advance the lowest occupied base by one
+                    if (onFirst != null) { onSecond = onFirst; onFirst = null; }
+                    else if (onSecond != null) { onThird = onSecond; onSecond = null; }
+                }
+                default -> { /* STRIKEOUT, OUT, SAC_BUNT, PITCHING_CHANGE, etc. — no base change */ }
+            }
+
+            if (AT_BAT_ENDING.contains(type)) {
+                int recordedOuts = outsOnPlay > 0 ? outsOnPlay
+                    : isOutRecordingEvent(type) ? 1 : 0;
+                currentOuts += recordedOuts;
+                if (currentOuts >= 3) {
+                    currentOuts = 0;
+                    onFirst = onSecond = onThird = null;
+                }
+            }
+        }
+
+        gameState.setFirstBasePlayerMatch(onFirst);
+        gameState.setSecondBasePlayerMatch(onSecond);
+        gameState.setThirdBasePlayerMatch(onThird);
+        // Next batter cannot be determined from events without full lineup order
+        gameState.setCurrentBatterPlayerMatch(null);
+    }
+
+    private boolean isOutRecordingEvent(BaseballEventType type) {
+        return type == BaseballEventType.STRIKEOUT
+            || type == BaseballEventType.OUT
+            || type == BaseballEventType.SACRIFICE_FLY
+            || type == BaseballEventType.SACRIFICE_BUNT;
+    }
+
     @Override
     @Transactional
     public BaseballGameStateDTO rebuildGameStateFromEvents(Long matchId) {
@@ -344,10 +450,7 @@ public class BaseballGameStateService implements IBaseballGameStateService {
             gameState.setOuts(Math.min(currentOuts, 2));
             gameState.setBalls(0);
             gameState.setStrikes(0);
-            // Clear bases — they cannot be reliably reconstructed without full runner tracking
-            gameState.setFirstBasePlayerMatch(null);
-            gameState.setSecondBasePlayerMatch(null);
-            gameState.setThirdBasePlayerMatch(null);
+            reconstructBases(gameState, events);
         }
 
         gameState = gameStateRepository.save(gameState);
