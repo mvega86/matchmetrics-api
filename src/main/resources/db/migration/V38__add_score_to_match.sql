@@ -1,0 +1,3 @@
+ALTER TABLE match
+    ADD COLUMN home_score INT NOT NULL DEFAULT 0,
+    ADD COLUMN away_score INT NOT NULL DEFAULT 0;

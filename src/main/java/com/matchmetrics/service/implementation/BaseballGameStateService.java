@@ -3,15 +3,18 @@ package com.matchmetrics.service.implementation;
 import com.matchmetrics.domain.enums.BaseballEventType;
 import com.matchmetrics.domain.enums.BaseballGameStatus;
 import com.matchmetrics.domain.enums.InningHalf;
+import com.matchmetrics.domain.enums.MatchState;
 import com.matchmetrics.domain.enums.SportType;
 import com.matchmetrics.exception.EntityNotFoundException;
 import com.matchmetrics.mapper.BaseballGameStateMapper;
 import com.matchmetrics.mapper.dto.BaseballGameStateDTO;
 import com.matchmetrics.persistence.entity.BaseballGameState;
 import com.matchmetrics.persistence.entity.BaseballPlayEvent;
+import com.matchmetrics.persistence.entity.Match;
 import com.matchmetrics.persistence.entity.PlayerMatch;
 import com.matchmetrics.persistence.repository.BaseballGameStateRepository;
 import com.matchmetrics.persistence.repository.BaseballPlayEventRepository;
+import com.matchmetrics.persistence.repository.MatchRepository;
 import com.matchmetrics.persistence.repository.PlayerMatchRepository;
 import com.matchmetrics.service.IBaseballGameStateService;
 import lombok.extern.slf4j.Slf4j;
@@ -36,17 +39,20 @@ public class BaseballGameStateService implements IBaseballGameStateService {
     private final BaseballGameStateRepository gameStateRepository;
     private final BaseballPlayEventRepository playEventRepository;
     private final PlayerMatchRepository playerMatchRepository;
+    private final MatchRepository matchRepository;
     private final BaseballGameStateMapper mapper;
 
     public BaseballGameStateService(
             BaseballGameStateRepository gameStateRepository,
             BaseballPlayEventRepository playEventRepository,
             PlayerMatchRepository playerMatchRepository,
+            MatchRepository matchRepository,
             BaseballGameStateMapper mapper
     ) {
         this.gameStateRepository = gameStateRepository;
         this.playEventRepository = playEventRepository;
         this.playerMatchRepository = playerMatchRepository;
+        this.matchRepository = matchRepository;
         this.mapper = mapper;
     }
 
@@ -158,10 +164,25 @@ public class BaseballGameStateService implements IBaseballGameStateService {
         }
         if (dto.getStatus() != null) {
             gameState.setStatus(dto.getStatus());
+            // When the game finishes, persist the final score and state on the Match record
+            if (dto.getStatus() == BaseballGameStatus.FINISHED) {
+                syncFinishedGameToMatch(gameState);
+            }
         }
 
         gameState = gameStateRepository.save(gameState);
         return mapper.toDTO(gameState);
+    }
+
+    private void syncFinishedGameToMatch(BaseballGameState gameState) {
+        Match match = gameState.getMatch();
+        if (match == null) return;
+        match.setHomeScore(gameState.getHomeScore() != null ? gameState.getHomeScore() : 0);
+        match.setAwayScore(gameState.getAwayScore() != null ? gameState.getAwayScore() : 0);
+        match.setState(MatchState.FINISHED);
+        matchRepository.save(match);
+        log.info("Match {} result synced: home={} away={}", match.getId(),
+            match.getHomeScore(), match.getAwayScore());
     }
 
     @Override
@@ -266,6 +287,7 @@ public class BaseballGameStateService implements IBaseballGameStateService {
         log.info("Finishing game for match: {}", matchId);
         BaseballGameState gameState = getGameStateEntity(matchId);
         gameState.setStatus(BaseballGameStatus.FINISHED);
+        syncFinishedGameToMatch(gameState);
         gameState = gameStateRepository.save(gameState);
         return mapper.toDTO(gameState);
     }
