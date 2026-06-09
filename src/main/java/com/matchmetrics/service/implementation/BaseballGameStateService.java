@@ -170,8 +170,23 @@ public class BaseballGameStateService implements IBaseballGameStateService {
             }
         }
 
+        validateNoDuplicateRunners(gameState);
+
         gameState = gameStateRepository.save(gameState);
         return mapper.toDTO(gameState);
+    }
+
+    private void validateNoDuplicateRunners(BaseballGameState state) {
+        Long first  = state.getFirstBasePlayerMatch()  != null ? state.getFirstBasePlayerMatch().getId()  : null;
+        Long second = state.getSecondBasePlayerMatch() != null ? state.getSecondBasePlayerMatch().getId() : null;
+        Long third  = state.getThirdBasePlayerMatch()  != null ? state.getThirdBasePlayerMatch().getId()  : null;
+
+        if (first  != null && (first.equals(second) || first.equals(third))) {
+            throw new IllegalArgumentException("Player " + first + " cannot occupy more than one base at the same time");
+        }
+        if (second != null && second.equals(third)) {
+            throw new IllegalArgumentException("Player " + second + " cannot occupy more than one base at the same time");
+        }
     }
 
     private void syncFinishedGameToMatch(BaseballGameState gameState) {
