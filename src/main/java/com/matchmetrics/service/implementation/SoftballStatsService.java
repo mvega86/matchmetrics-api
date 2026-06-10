@@ -94,7 +94,8 @@ public class SoftballStatsService implements ISoftballStatsService {
         dto.setSlg(formatAvg(ab > 0 ? (double) totalBases(singles, doubles, triples, homeRuns) / ab : 0.0));
 
         // ── Pitching ─────────────────────────────────────────────────────────
-        int totalOuts = pitchingEvents.stream().mapToInt(e -> e.getOutsOnPlay() != null ? e.getOutsOnPlay() : 0).sum();
+        // outsOnPlay may be 0 even for real outs — derive from event type as fallback
+        int totalOuts = pitchingEvents.stream().mapToInt(this::outsFromEvent).sum();
         double ipDecimal = totalOuts / 3.0;
 
         int pitchingK  = count(pitchingEvents, BaseballEventType.STRIKEOUT);
@@ -119,8 +120,8 @@ public class SoftballStatsService implements ISoftballStatsService {
         dto.setPitchingWalks(pitchingBB);
         dto.setHitsAllowed(hitsAllowed);
         dto.setEarnedRuns(earnedRuns);
-        dto.setEra(ipDecimal > 0 ? formatEra(earnedRuns * 9.0 / ipDecimal) : "—");
-        dto.setWhip(ipDecimal > 0 ? formatEra((hitsAllowed + pitchingBB) / ipDecimal) : "—");
+        dto.setEra(ipDecimal > 0 ? formatEra(earnedRuns * 9.0 / ipDecimal) : "0.00");
+        dto.setWhip(ipDecimal > 0 ? formatEra((hitsAllowed + pitchingBB) / ipDecimal) : "0.00");
 
         return dto;
     }
@@ -142,6 +143,17 @@ public class SoftballStatsService implements ISoftballStatsService {
             else if (oppScore > teamScore) losses++;
         }
         return new int[]{wins, losses};
+    }
+
+    private int outsFromEvent(BaseballPlayEvent e) {
+        int recorded = e.getOutsOnPlay() != null ? e.getOutsOnPlay() : 0;
+        if (recorded > 0) return recorded;
+        return switch (e.getEventType()) {
+            case STRIKEOUT, OUT, CAUGHT_STEALING -> 1;
+            case DOUBLE_PLAY -> 2;
+            case TRIPLE_PLAY -> 3;
+            default -> 0;
+        };
     }
 
     private int count(List<BaseballPlayEvent> events, BaseballEventType type) {
@@ -175,7 +187,7 @@ public class SoftballStatsService implements ISoftballStatsService {
     private TournamentPlayerStatsDTO emptyStats() {
         TournamentPlayerStatsDTO dto = new TournamentPlayerStatsDTO();
         dto.setAvg(".000"); dto.setObp(".000"); dto.setSlg(".000");
-        dto.setIp("0.0"); dto.setEra("—"); dto.setWhip("—");
+        dto.setIp("0.0"); dto.setEra("0.00"); dto.setWhip("0.00");
         return dto;
     }
 }
