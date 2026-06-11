@@ -27,6 +27,7 @@ public class TournamentMapper {
         tournament.setLocation(dto.getLocation());
         tournament.setCountry(dto.getCountry());
         tournament.setCategory(dto.getCategory());
+        tournament.setLogoUrl(dto.getLogoUrl());
         return tournament;
     }
 
@@ -36,6 +37,7 @@ public class TournamentMapper {
         dto.setId(entity.getId());
         dto.setName(entity.getName());
         dto.setDescription(entity.getDescription());
+        dto.setLogoUrl(entity.getLogoUrl());
         dto.setSportType(entity.getSportType());
         dto.setStatus(entity.getStatus());
         dto.setStartDate(entity.getStartDate());

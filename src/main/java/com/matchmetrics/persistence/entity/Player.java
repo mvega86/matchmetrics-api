@@ -42,4 +42,7 @@ public class Player extends AuditModel {
     @JsonBackReference
     private Team team;
 
+    @Column(name = "photo_url", length = 500)
+    private String photoUrl;
+
 }

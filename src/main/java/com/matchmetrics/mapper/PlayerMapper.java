@@ -22,7 +22,8 @@ public class PlayerMapper {
                 player.getJerseyNumber(),
                 player.getBirthDate(),
                 player.getAge(),
-                player.getTeam().getId());
+                player.getTeam() != null ? player.getTeam().getId() : null,
+                player.getPhotoUrl());
     }
     public Player toEntity(PlayerDTO playerDTO, Team team){
         return new Player(
@@ -32,6 +33,7 @@ public class PlayerMapper {
                 playerDTO.getJerseyNumber(),
                 playerDTO.getBirthDate(),
                 playerDTO.getAge(),
-                team);
+                team,
+                playerDTO.getPhotoUrl());
     }
 }

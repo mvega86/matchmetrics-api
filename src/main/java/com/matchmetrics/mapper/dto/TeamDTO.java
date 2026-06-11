@@ -19,4 +19,6 @@ public class TeamDTO {
     private String stadium;
 
     private SportType sportType;
+
+    private String photoUrl;
 }

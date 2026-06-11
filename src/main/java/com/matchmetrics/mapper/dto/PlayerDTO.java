@@ -25,4 +25,5 @@ public class PlayerDTO {
     private LocalDate birthDate;
     private Integer age;
     private Long teamId;
+    private String photoUrl;
 }
