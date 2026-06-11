@@ -28,6 +28,7 @@ public class TournamentPlayerStatsDTO {
     private int pitchingAppearances;
     private int wins;
     private int losses;
+    private int saves;
     private String ip;
     private int pitchingStrikeouts;
     private int pitchingWalks;
