@@ -23,4 +23,10 @@ public interface BaseballPlayEventRepository extends JpaRepository<BaseballPlayE
 
     @Query("SELECT e FROM BaseballPlayEvent e WHERE e.match.tournament IS NOT NULL AND e.match.tournament.id = :tournamentId AND e.pitcherPlayerMatch IS NOT NULL AND e.pitcherPlayerMatch.player.id = :playerId")
     List<BaseballPlayEvent> findPitchingEventsByTournamentAndPlayer(@Param("tournamentId") Long tournamentId, @Param("playerId") Long playerId);
+
+    @Query("SELECT e FROM BaseballPlayEvent e WHERE e.batterPlayerMatch IS NOT NULL AND e.batterPlayerMatch.player.id = :playerId")
+    List<BaseballPlayEvent> findBattingEventsByPlayer(@Param("playerId") Long playerId);
+
+    @Query("SELECT e FROM BaseballPlayEvent e WHERE e.pitcherPlayerMatch IS NOT NULL AND e.pitcherPlayerMatch.player.id = :playerId")
+    List<BaseballPlayEvent> findPitchingEventsByPlayer(@Param("playerId") Long playerId);
 }

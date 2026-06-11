@@ -22,8 +22,19 @@ public class SoftballStatsController {
     ) {
         log.info("Request for tournament stats of playerMatch: {}", playerMatchId);
         try {
-            TournamentPlayerStatsDTO stats = softballStatsService.getPlayerTournamentStats(playerMatchId);
-            return ResponseEntity.ok(stats);
+            return ResponseEntity.ok(softballStatsService.getPlayerTournamentStats(playerMatchId));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/player-match/{playerMatchId}/lifetime")
+    public ResponseEntity<TournamentPlayerStatsDTO> getPlayerLifetimeStats(
+            @PathVariable Long playerMatchId
+    ) {
+        log.info("Request for lifetime stats of playerMatch: {}", playerMatchId);
+        try {
+            return ResponseEntity.ok(softballStatsService.getPlayerLifetimeStats(playerMatchId));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }
