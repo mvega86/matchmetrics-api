@@ -53,6 +53,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/register").permitAll()
                         .requestMatchers("/api/v1/auth/login").permitAll()
 
+                        // Imágenes subidas — lectura pública, escritura autenticada
+                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/uploads").hasAnyRole("ADMIN", "MANAGER")
+
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 
                         // Escritura de Teams solo ADMIN
