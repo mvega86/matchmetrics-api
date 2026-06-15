@@ -11,10 +11,12 @@ import com.matchmetrics.mapper.dto.BaseballGameStateDTO;
 import com.matchmetrics.persistence.entity.BaseballGameState;
 import com.matchmetrics.persistence.entity.BaseballPlayEvent;
 import com.matchmetrics.persistence.entity.Match;
+import com.matchmetrics.persistence.entity.PitcherPitchCount;
 import com.matchmetrics.persistence.entity.PlayerMatch;
 import com.matchmetrics.persistence.repository.BaseballGameStateRepository;
 import com.matchmetrics.persistence.repository.BaseballPlayEventRepository;
 import com.matchmetrics.persistence.repository.MatchRepository;
+import com.matchmetrics.persistence.repository.PitcherPitchCountRepository;
 import com.matchmetrics.persistence.repository.PlayerMatchRepository;
 import com.matchmetrics.service.IBaseballGameStateService;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +42,7 @@ public class BaseballGameStateService implements IBaseballGameStateService {
     private final BaseballPlayEventRepository playEventRepository;
     private final PlayerMatchRepository playerMatchRepository;
     private final MatchRepository matchRepository;
+    private final PitcherPitchCountRepository pitcherPitchCountRepository;
     private final BaseballGameStateMapper mapper;
 
     public BaseballGameStateService(
@@ -47,12 +50,14 @@ public class BaseballGameStateService implements IBaseballGameStateService {
             BaseballPlayEventRepository playEventRepository,
             PlayerMatchRepository playerMatchRepository,
             MatchRepository matchRepository,
+            PitcherPitchCountRepository pitcherPitchCountRepository,
             BaseballGameStateMapper mapper
     ) {
         this.gameStateRepository = gameStateRepository;
         this.playEventRepository = playEventRepository;
         this.playerMatchRepository = playerMatchRepository;
         this.matchRepository = matchRepository;
+        this.pitcherPitchCountRepository = pitcherPitchCountRepository;
         this.mapper = mapper;
     }
 
@@ -153,6 +158,10 @@ public class BaseballGameStateService implements IBaseballGameStateService {
         }
         if (dto.getPitchCount() != null) {
             gameState.setPitchCount(Math.max(0, dto.getPitchCount()));
+        }
+        if (dto.getCurrentPitcherPlayerMatchId() != null) {
+            PlayerMatch pitcher = playerMatchRepository.findById(dto.getCurrentPitcherPlayerMatchId()).orElse(null);
+            gameState.setCurrentPitcherPlayerMatch(pitcher);
         }
         if (Boolean.TRUE.equals(dto.getClearCurrentBatter())) {
             gameState.setCurrentBatterPlayerMatch(null);
@@ -482,6 +491,50 @@ public class BaseballGameStateService implements IBaseballGameStateService {
         BaseballGameState gameState = getGameStateEntity(matchId);
         gameStateRepository.delete(gameState);
         log.info("Game state deleted for match: {}", matchId);
+    }
+
+    @Override
+    @Transactional
+    public BaseballGameStateDTO updatePitcherTracking(Long matchId,
+                                                       Long incomingPitcherPMId,
+                                                       Long outgoingPitcherPMId,
+                                                       Integer outgoingPitchCount) {
+        log.info("Updating pitcher tracking for match: {} | in={} out={} outCount={}",
+                matchId, incomingPitcherPMId, outgoingPitcherPMId, outgoingPitchCount);
+
+        final BaseballGameState gameState = getGameStateEntity(matchId);
+
+        // Persist outgoing pitcher's pitch count
+        if (outgoingPitcherPMId != null && outgoingPitchCount != null) {
+            PitcherPitchCount record = pitcherPitchCountRepository
+                    .findByGameStateIdAndPitcherPMId(gameState.getId(), outgoingPitcherPMId)
+                    .orElseGet(() -> {
+                        PitcherPitchCount newRecord = new PitcherPitchCount();
+                        newRecord.setGameState(gameState);
+                        PlayerMatch pm = playerMatchRepository.findById(outgoingPitcherPMId)
+                                .orElseThrow(() -> new EntityNotFoundException("PlayerMatch not found: " + outgoingPitcherPMId));
+                        newRecord.setPitcherPlayerMatch(pm);
+                        return newRecord;
+                    });
+            record.setPitchCount(outgoingPitchCount);
+            pitcherPitchCountRepository.save(record);
+        }
+
+        // Set incoming pitcher as current and load their saved pitch count
+        if (incomingPitcherPMId != null) {
+            PlayerMatch incoming = playerMatchRepository.findById(incomingPitcherPMId)
+                    .orElseThrow(() -> new EntityNotFoundException("PlayerMatch not found: " + incomingPitcherPMId));
+            gameState.setCurrentPitcherPlayerMatch(incoming);
+
+            int restoredCount = pitcherPitchCountRepository
+                    .findByGameStateIdAndPitcherPMId(gameState.getId(), incomingPitcherPMId)
+                    .map(PitcherPitchCount::getPitchCount)
+                    .orElse(0);
+            gameState.setPitchCount(restoredCount);
+        }
+
+        BaseballGameState saved = gameStateRepository.save(gameState);
+        return mapper.toDTO(saved);
     }
 
     private BaseballGameState getGameStateEntity(Long matchId) {

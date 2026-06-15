@@ -9,6 +9,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Map;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -52,6 +54,10 @@ public class BaseballGameStateDTO {
     private Boolean clearThirdBase;
 
     private Integer pitchCount;
+
+    private Long currentPitcherPlayerMatchId;
+
+    private Map<Long, Integer> pitcherPitchCounts;
 
     @NotNull(message = "Status is required.")
     private BaseballGameStatus status;
