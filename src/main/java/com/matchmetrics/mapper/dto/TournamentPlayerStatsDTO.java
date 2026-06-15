@@ -20,9 +20,11 @@ public class TournamentPlayerStatsDTO {
     private int walks;
     private int hitByPitch;
     private int strikeouts;
+    private int stolenBases;
     private String avg;
     private String obp;
     private String slg;
+    private String ops;
 
     // ── Pitching ─────────────────────────────────────────────────────────────
     private int pitchingAppearances;

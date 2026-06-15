@@ -204,8 +204,12 @@ public class PlayerStatisticsQueryServiceImpl implements IPlayerStatisticsQueryS
         int hbp        = count(batting, BaseballEventType.HIT_BY_PITCH);
         int sacFly     = count(batting, BaseballEventType.SACRIFICE_FLY);
         int strikeouts = count(batting, BaseballEventType.STRIKEOUT);
+        int stolenBases = count(batting, BaseballEventType.STOLEN_BASE);
         int rbi        = batting.stream().mapToInt(e -> e.getRbi() != null ? e.getRbi() : 0).sum();
         int ab         = (int) batting.stream().filter(e -> AT_BAT_TYPES.contains(e.getEventType())).count();
+
+        double obpVal = obp(hits, bb, hbp, ab, sacFly);
+        double slgVal = ab > 0 ? (double) totalBases(singles, doubles, triples, homeRuns) / ab : 0.0;
 
         dto.setAb(ab);
         dto.setHits(hits);
@@ -217,9 +221,11 @@ public class PlayerStatisticsQueryServiceImpl implements IPlayerStatisticsQueryS
         dto.setWalks(bb);
         dto.setHitByPitch(hbp);
         dto.setStrikeouts(strikeouts);
+        dto.setStolenBases(stolenBases);
         dto.setAvg(formatAvg(ab > 0 ? (double) hits / ab : 0.0));
-        dto.setObp(formatAvg(obp(hits, bb, hbp, ab, sacFly)));
-        dto.setSlg(formatAvg(ab > 0 ? (double) totalBases(singles, doubles, triples, homeRuns) / ab : 0.0));
+        dto.setObp(formatAvg(obpVal));
+        dto.setSlg(formatAvg(slgVal));
+        dto.setOps(formatAvg(obpVal + slgVal));
 
         int totalOuts  = pitching.stream().mapToInt(this::outsFromEvent).sum();
         double ipDec   = totalOuts / 3.0;

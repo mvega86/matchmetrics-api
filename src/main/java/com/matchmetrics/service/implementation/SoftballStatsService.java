@@ -82,13 +82,18 @@ public class SoftballStatsService implements ISoftballStatsService {
         int rbi        = battingEvents.stream().mapToInt(e -> e.getRbi() != null ? e.getRbi() : 0).sum();
         int ab         = (int) battingEvents.stream().filter(e -> AT_BAT_TYPES.contains(e.getEventType())).count();
 
-        dto.setAb(ab);           dto.setHits(hits);      dto.setSingles(singles);
-        dto.setDoubles(doubles); dto.setTriples(triples); dto.setHomeRuns(homeRuns);
-        dto.setRbi(rbi);        dto.setWalks(bb);        dto.setHitByPitch(hbp);
-        dto.setStrikeouts(strikeouts);
+        int stolenBases = count(battingEvents, BaseballEventType.STOLEN_BASE);
+        double obpVal   = obp(hits, bb, hbp, ab, sacFly);
+        double slgVal   = ab > 0 ? (double) totalBases(singles, doubles, triples, homeRuns) / ab : 0.0;
+
+        dto.setAb(ab);           dto.setHits(hits);       dto.setSingles(singles);
+        dto.setDoubles(doubles); dto.setTriples(triples);  dto.setHomeRuns(homeRuns);
+        dto.setRbi(rbi);         dto.setWalks(bb);         dto.setHitByPitch(hbp);
+        dto.setStrikeouts(strikeouts); dto.setStolenBases(stolenBases);
         dto.setAvg(formatAvg(ab > 0 ? (double) hits / ab : 0.0));
-        dto.setObp(formatAvg(obp(hits, bb, hbp, ab, sacFly)));
-        dto.setSlg(formatAvg(ab > 0 ? (double) totalBases(singles, doubles, triples, homeRuns) / ab : 0.0));
+        dto.setObp(formatAvg(obpVal));
+        dto.setSlg(formatAvg(slgVal));
+        dto.setOps(formatAvg(obpVal + slgVal));
 
         // ── Pitching ─────────────────────────────────────────────────────────
         int totalOuts   = pitchingEvents.stream().mapToInt(this::outsFromEvent).sum();
