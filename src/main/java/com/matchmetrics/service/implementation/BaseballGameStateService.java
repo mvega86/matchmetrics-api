@@ -157,7 +157,22 @@ public class BaseballGameStateService implements IBaseballGameStateService {
             gameState.setThirdBasePlayerMatch(playerMatchRepository.findById(dto.getThirdBasePlayerMatchId()).orElse(null));
         }
         if (dto.getPitchCount() != null) {
-            gameState.setPitchCount(Math.max(0, dto.getPitchCount()));
+            int newCount = Math.max(0, dto.getPitchCount());
+            gameState.setPitchCount(newCount);
+            if (gameState.getCurrentPitcherPlayerMatch() != null) {
+                final BaseballGameState gs = gameState;
+                final int count = newCount;
+                PitcherPitchCount record = pitcherPitchCountRepository
+                    .findByGameStateIdAndPitcherPMId(gs.getId(), gs.getCurrentPitcherPlayerMatch().getId())
+                    .orElseGet(() -> {
+                        PitcherPitchCount r = new PitcherPitchCount();
+                        r.setGameState(gs);
+                        r.setPitcherPlayerMatch(gs.getCurrentPitcherPlayerMatch());
+                        return r;
+                    });
+                record.setPitchCount(count);
+                pitcherPitchCountRepository.save(record);
+            }
         }
         if (dto.getCurrentPitcherPlayerMatchId() != null) {
             PlayerMatch pitcher = playerMatchRepository.findById(dto.getCurrentPitcherPlayerMatchId()).orElse(null);
