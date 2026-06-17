@@ -52,6 +52,7 @@ public class BaseballGameStateDTO {
     private Boolean clearCurrentBatter;
     private Boolean clearSecondBase;
     private Boolean clearThirdBase;
+    private Boolean clearCurrentPitcher;
 
     private Integer pitchCount;
 

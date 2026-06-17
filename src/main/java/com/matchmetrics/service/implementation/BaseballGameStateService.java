@@ -174,8 +174,16 @@ public class BaseballGameStateService implements IBaseballGameStateService {
                 pitcherPitchCountRepository.save(record);
             }
         }
-        if (dto.getCurrentPitcherPlayerMatchId() != null) {
-            PlayerMatch pitcher = playerMatchRepository.findById(dto.getCurrentPitcherPlayerMatchId()).orElse(null);
+        if (Boolean.TRUE.equals(dto.getClearCurrentPitcher())) {
+            gameState.setCurrentPitcherPlayerMatch(null);
+            gameState.setPitchCount(0);
+        } else if (dto.getCurrentPitcherPlayerMatchId() != null) {
+            if (!playerMatchRepository.existsByIdAndMatchId(dto.getCurrentPitcherPlayerMatchId(), matchId)) {
+                throw new IllegalArgumentException(
+                    "PlayerMatch " + dto.getCurrentPitcherPlayerMatchId() + " does not belong to match " + matchId);
+            }
+            PlayerMatch pitcher = playerMatchRepository.findById(dto.getCurrentPitcherPlayerMatchId())
+                    .orElseThrow(() -> new EntityNotFoundException("PlayerMatch not found: " + dto.getCurrentPitcherPlayerMatchId()));
             gameState.setCurrentPitcherPlayerMatch(pitcher);
         }
         if (Boolean.TRUE.equals(dto.getClearCurrentBatter())) {
@@ -521,6 +529,10 @@ public class BaseballGameStateService implements IBaseballGameStateService {
 
         // Persist outgoing pitcher's pitch count
         if (outgoingPitcherPMId != null && outgoingPitchCount != null) {
+            if (!playerMatchRepository.existsByIdAndMatchId(outgoingPitcherPMId, matchId)) {
+                throw new IllegalArgumentException(
+                    "Outgoing PlayerMatch " + outgoingPitcherPMId + " does not belong to match " + matchId);
+            }
             PitcherPitchCount record = pitcherPitchCountRepository
                     .findByGameStateIdAndPitcherPMId(gameState.getId(), outgoingPitcherPMId)
                     .orElseGet(() -> {
@@ -537,6 +549,10 @@ public class BaseballGameStateService implements IBaseballGameStateService {
 
         // Set incoming pitcher as current and load their saved pitch count
         if (incomingPitcherPMId != null) {
+            if (!playerMatchRepository.existsByIdAndMatchId(incomingPitcherPMId, matchId)) {
+                throw new IllegalArgumentException(
+                    "Incoming PlayerMatch " + incomingPitcherPMId + " does not belong to match " + matchId);
+            }
             PlayerMatch incoming = playerMatchRepository.findById(incomingPitcherPMId)
                     .orElseThrow(() -> new EntityNotFoundException("PlayerMatch not found: " + incomingPitcherPMId));
             gameState.setCurrentPitcherPlayerMatch(incoming);
