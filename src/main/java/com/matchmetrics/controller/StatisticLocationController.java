@@ -1,8 +1,8 @@
 // StatisticLocationController.java
 package com.matchmetrics.controller;
 
-import com.matchmetrics.persistence.entity.StatisticLocation;
-import com.matchmetrics.persistence.repository.StatisticLocationRepository;
+import com.matchmetrics.mapper.dto.StatisticLocationDTO;
+import com.matchmetrics.service.IStatisticLocationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -16,11 +16,11 @@ import java.util.List;
 @CrossOrigin(origins = "http://localhost:5173")
 public class StatisticLocationController {
 
-    private final StatisticLocationRepository repository;
+    private final IStatisticLocationService statisticLocationService;
 
     @GetMapping
-    public List<StatisticLocation> getAll() {
+    public List<StatisticLocationDTO> getAll() {
         log.info("Request received to retrieve all statistic locations...");
-        return repository.findAll();
+        return statisticLocationService.getAll();
     }
 }
