@@ -111,7 +111,7 @@ public class SoftballStatsService implements ISoftballStatsService {
         dto.setIp(formatIp(totalOuts));
         dto.setPitchingStrikeouts(pitchingK); dto.setPitchingWalks(pitchingBB);
         dto.setHitsAllowed(hitsAllowed);      dto.setEarnedRuns(earnedRuns);
-        dto.setEra(ipDec > 0 ? formatEra(earnedRuns * 9.0 / ipDec) : "0.00");
+        dto.setEra(ipDec > 0 ? formatEra(earnedRuns * 7.0 / ipDec) : "0.00");
         dto.setWhip(ipDec > 0 ? formatEra((hitsAllowed + pitchingBB) / ipDec) : "0.00");
 
         return dto;

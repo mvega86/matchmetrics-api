@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class PlayerStatisticsQueryServiceImpl implements IPlayerStatisticsQueryService {
+public class PlayerStatisticsQueryService implements IPlayerStatisticsQueryService {
 
     private final BaseballPlayEventRepository eventRepo;
     private final PlayerRepository playerRepo;
@@ -132,6 +132,8 @@ public class PlayerStatisticsQueryServiceImpl implements IPlayerStatisticsQueryS
         Player player = playerRepo.findById(playerId)
                 .orElseThrow(() -> new EntityNotFoundException("Player not found: " + playerId));
 
+        SportType sportType = player.getTeam() != null ? player.getTeam().getSportType() : SportType.SOFTBALL;
+
         List<BaseballPlayEvent> allBatting  = eventRepo.findBattingEventsByPlayer(playerId);
         List<BaseballPlayEvent> allPitching = eventRepo.findPitchingEventsByPlayer(playerId);
 
@@ -147,7 +149,7 @@ public class PlayerStatisticsQueryServiceImpl implements IPlayerStatisticsQueryS
                         .collect(Collectors.toList())
                 : allPitching;
 
-        TournamentPlayerStatsDTO lifetime = buildStats(lifetimeBatting, lifetimePitching);
+        TournamentPlayerStatsDTO lifetime = buildStats(lifetimeBatting, lifetimePitching, sportType);
 
         Set<Long> tIds = allBatting.stream()
                 .filter(e -> e.getMatch().getTournament() != null)
@@ -169,7 +171,7 @@ public class PlayerStatisticsQueryServiceImpl implements IPlayerStatisticsQueryS
 
             String tournamentName = (!tBat.isEmpty() ? tBat.get(0) : tPit.get(0))
                     .getMatch().getTournament().getName();
-            breakdown.add(new TournamentBreakdownDTO(tid, tournamentName, buildStats(tBat, tPit)));
+            breakdown.add(new TournamentBreakdownDTO(tid, tournamentName, buildStats(tBat, tPit, sportType)));
         }
 
         Team team = player.getTeam();
@@ -192,7 +194,9 @@ public class PlayerStatisticsQueryServiceImpl implements IPlayerStatisticsQueryS
 
     // ── Stats builder (shared logic) ─────────────────────────────────────────
 
-    private TournamentPlayerStatsDTO buildStats(List<BaseballPlayEvent> batting, List<BaseballPlayEvent> pitching) {
+    private TournamentPlayerStatsDTO buildStats(List<BaseballPlayEvent> batting,
+                                                 List<BaseballPlayEvent> pitching,
+                                                 SportType sportType) {
         TournamentPlayerStatsDTO dto = new TournamentPlayerStatsDTO();
 
         int singles    = count(batting, BaseballEventType.SINGLE);
@@ -235,13 +239,16 @@ public class PlayerStatisticsQueryServiceImpl implements IPlayerStatisticsQueryS
         int earnedRuns = pitching.stream().mapToInt(e -> e.getRunsScored() != null ? e.getRunsScored() : 0).sum();
         int appearances = (int) pitching.stream().map(e -> e.getMatch().getId()).distinct().count();
 
+        // ERA multiplier: 7 innings for Softball, 9 for other sports (SOFTBALL_RULES.md §18)
+        double eraMultiplier = sportType == SportType.SOFTBALL ? 7.0 : 9.0;
+
         dto.setPitchingAppearances(appearances);
         dto.setIp(formatIp(totalOuts));
         dto.setPitchingStrikeouts(pitchingK);
         dto.setPitchingWalks(pitchingBB);
         dto.setHitsAllowed(hAllowed);
         dto.setEarnedRuns(earnedRuns);
-        dto.setEra(ipDec > 0 ? formatEra(earnedRuns * 9.0 / ipDec) : "0.00");
+        dto.setEra(ipDec > 0 ? formatEra(earnedRuns * eraMultiplier / ipDec) : "0.00");
         dto.setWhip(ipDec > 0 ? formatEra((hAllowed + pitchingBB) / ipDec) : "0.00");
         return dto;
     }
