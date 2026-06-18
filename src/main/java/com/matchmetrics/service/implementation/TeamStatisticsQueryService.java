@@ -14,7 +14,7 @@ import java.util.*;
 
 @Service
 @RequiredArgsConstructor
-public class TeamStatisticsQueryServiceImpl implements ITeamStatisticsQueryService {
+public class TeamStatisticsQueryService implements ITeamStatisticsQueryService {
 
     private final MatchRepository matchRepo;
 

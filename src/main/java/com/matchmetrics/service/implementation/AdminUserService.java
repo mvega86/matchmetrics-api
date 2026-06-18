@@ -16,7 +16,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class AdminUserServiceImpl implements IAdminUserService {
+public class AdminUserService implements IAdminUserService {
 
     private final AppUserRepository appUserRepository;
     private final TeamRepository teamRepository;
