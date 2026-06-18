@@ -156,6 +156,18 @@ public class BaseballGameStateService implements IBaseballGameStateService {
             }
             gameState.setThirdBasePlayerMatch(playerMatchRepository.findById(dto.getThirdBasePlayerMatchId()).orElse(null));
         }
+        if (Boolean.TRUE.equals(dto.getClearCurrentPitcher())) {
+            gameState.setCurrentPitcherPlayerMatch(null);
+            gameState.setPitchCount(0);
+        } else if (dto.getCurrentPitcherPlayerMatchId() != null) {
+            if (!playerMatchRepository.existsByIdAndMatchId(dto.getCurrentPitcherPlayerMatchId(), matchId)) {
+                throw new IllegalArgumentException(
+                    "PlayerMatch " + dto.getCurrentPitcherPlayerMatchId() + " does not belong to match " + matchId);
+            }
+            PlayerMatch pitcher = playerMatchRepository.findById(dto.getCurrentPitcherPlayerMatchId())
+                    .orElseThrow(() -> new EntityNotFoundException("PlayerMatch not found: " + dto.getCurrentPitcherPlayerMatchId()));
+            gameState.setCurrentPitcherPlayerMatch(pitcher);
+        }
         if (dto.getPitchCount() != null) {
             int newCount = Math.max(0, dto.getPitchCount());
             gameState.setPitchCount(newCount);
@@ -173,18 +185,6 @@ public class BaseballGameStateService implements IBaseballGameStateService {
                 record.setPitchCount(count);
                 pitcherPitchCountRepository.save(record);
             }
-        }
-        if (Boolean.TRUE.equals(dto.getClearCurrentPitcher())) {
-            gameState.setCurrentPitcherPlayerMatch(null);
-            gameState.setPitchCount(0);
-        } else if (dto.getCurrentPitcherPlayerMatchId() != null) {
-            if (!playerMatchRepository.existsByIdAndMatchId(dto.getCurrentPitcherPlayerMatchId(), matchId)) {
-                throw new IllegalArgumentException(
-                    "PlayerMatch " + dto.getCurrentPitcherPlayerMatchId() + " does not belong to match " + matchId);
-            }
-            PlayerMatch pitcher = playerMatchRepository.findById(dto.getCurrentPitcherPlayerMatchId())
-                    .orElseThrow(() -> new EntityNotFoundException("PlayerMatch not found: " + dto.getCurrentPitcherPlayerMatchId()));
-            gameState.setCurrentPitcherPlayerMatch(pitcher);
         }
         if (Boolean.TRUE.equals(dto.getClearCurrentBatter())) {
             gameState.setCurrentBatterPlayerMatch(null);
