@@ -139,9 +139,9 @@ public class PlayerMatchService implements IPlayerMatchService {
         existing.setFieldPosition(playerMatchDTO.getFieldPosition());
         if (!positionOnly) {
             existing.setBattingOrder(playerMatchDTO.getBattingOrder());
+            existing.setInTime(playerMatchDTO.getInTime());
+            existing.setOutTime(playerMatchDTO.getOutTime());
         }
-        if (playerMatchDTO.getInTime() != null) existing.setInTime(playerMatchDTO.getInTime());
-        if (playerMatchDTO.getOutTime() != null) existing.setOutTime(playerMatchDTO.getOutTime());
 
         playerMatchRepository.save(existing);
         log.info("Logger: After save, ID: {} | fieldPosition='{}' battingOrder={}",
