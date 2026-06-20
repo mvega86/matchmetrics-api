@@ -17,6 +17,7 @@ public class TeamMapper {
         dto.setAcronym(team.getAcronym());
         dto.setStadium(team.getStadium());
         dto.setSportType(team.getSportType());
+        dto.setPhotoUrl(team.getPhotoUrl());
         return dto;
     }
 
@@ -27,6 +28,7 @@ public class TeamMapper {
         team.setAcronym(dto.getAcronym());
         team.setStadium(dto.getStadium());
         team.setSportType(dto.getSportType() != null ? dto.getSportType() : SportType.FOOTBALL);
+        team.setPhotoUrl(dto.getPhotoUrl());
         return team;
     }
 }

@@ -3,10 +3,14 @@ package com.matchmetrics.mapper;
 import com.matchmetrics.mapper.dto.BaseballGameStateDTO;
 import com.matchmetrics.persistence.entity.BaseballGameState;
 import com.matchmetrics.persistence.entity.Match;
+import com.matchmetrics.persistence.entity.PitcherPitchCount;
 import com.matchmetrics.persistence.entity.PlayerMatch;
 import com.matchmetrics.persistence.repository.MatchRepository;
 import com.matchmetrics.persistence.repository.PlayerMatchRepository;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 public class BaseballGameStateMapper {
@@ -35,6 +39,19 @@ public class BaseballGameStateMapper {
         dto.setThirdBasePlayerMatchId(entity.getThirdBasePlayerMatch() != null ? entity.getThirdBasePlayerMatch().getId() : null);
         dto.setCurrentBatterPlayerMatchId(entity.getCurrentBatterPlayerMatch() != null ? entity.getCurrentBatterPlayerMatch().getId() : null);
         dto.setPitchCount(entity.getPitchCount() != null ? entity.getPitchCount() : 0);
+        dto.setCurrentPitcherPlayerMatchId(
+            entity.getCurrentPitcherPlayerMatch() != null
+                ? entity.getCurrentPitcherPlayerMatch().getId()
+                : null
+        );
+        if (entity.getPitcherPitchCounts() != null && !entity.getPitcherPitchCounts().isEmpty()) {
+            Map<Long, Integer> countsMap = entity.getPitcherPitchCounts().stream()
+                .collect(Collectors.toMap(
+                    ppc -> ppc.getPitcherPlayerMatch().getId(),
+                    PitcherPitchCount::getPitchCount
+                ));
+            dto.setPitcherPitchCounts(countsMap);
+        }
         dto.setStatus(entity.getStatus());
         dto.setTotalInnings(entity.getTotalInnings());
         return dto;

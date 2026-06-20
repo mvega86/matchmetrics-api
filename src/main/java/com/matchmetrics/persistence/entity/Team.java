@@ -33,6 +33,9 @@ public class Team extends AuditModel {
     @Column(name = "sport_type", nullable = false)
     private SportType sportType = SportType.FOOTBALL;
 
+    @Column(name = "photo_url", length = 500)
+    private String photoUrl;
+
     @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private List<Player> players;

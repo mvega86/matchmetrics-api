@@ -9,6 +9,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "baseball_game_state")
 @Getter
@@ -64,6 +67,13 @@ public class BaseballGameState extends AuditModel {
 
     @Column(name = "pitch_count", nullable = false)
     private Integer pitchCount = 0;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "current_pitcher_player_match_id")
+    private PlayerMatch currentPitcherPlayerMatch;
+
+    @OneToMany(mappedBy = "gameState", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private List<PitcherPitchCount> pitcherPitchCounts = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)

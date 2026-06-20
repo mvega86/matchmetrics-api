@@ -48,6 +48,11 @@ public class SoftballPlayEventController {
         }
 
         MatchDTO match = matchService.getMatchById(dto.getMatchId());
+
+        if (match.getSportType() == null || match.getSportType() != com.matchmetrics.domain.enums.SportType.SOFTBALL) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Match " + dto.getMatchId() + " is not a SOFTBALL match"));
+        }
+
         teamAccessValidator.validateAnyTeamOrAdmin(
                 principal,
                 match.getHomeTeam() != null ? match.getHomeTeam().getId() : null,

@@ -15,6 +15,12 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+record PitcherTrackingRequest(
+    Long incomingPitcherPlayerMatchId,
+    Long outgoingPitcherPlayerMatchId,
+    Integer outgoingPitchCount
+) {}
+
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/softball/game-state")
@@ -115,6 +121,65 @@ public class SoftballGameStateController {
             ));
         } catch (Exception e) {
             log.error("Error updating softball game state: {}", e.getMessage());
+            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/{matchId}/pitcher")
+    public ResponseEntity<Map<String, Object>> updatePitcherTracking(
+            @PathVariable Long matchId,
+            @RequestBody PitcherTrackingRequest req,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        log.info("Request to update pitcher tracking for match: {}", matchId);
+
+        if (principal == null || (principal.getRole() != UserRole.ADMIN && principal.getRole() != UserRole.MANAGER)) {
+            return ResponseEntity.status(403).build();
+        }
+
+        try {
+            BaseballGameStateDTO updated = gameStateService.updatePitcherTracking(
+                    matchId,
+                    req.incomingPitcherPlayerMatchId(),
+                    req.outgoingPitcherPlayerMatchId(),
+                    req.outgoingPitchCount()
+            );
+            return ResponseEntity.ok(Map.of(
+                    "message", "Pitcher tracking updated successfully",
+                    "data", updated
+            ));
+        } catch (Exception e) {
+            log.error("Error updating pitcher tracking: {}", e.getMessage());
+            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{matchId}/rebuild")
+    public ResponseEntity<Map<String, Object>> rebuild(
+            @PathVariable Long matchId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        log.info("Request to rebuild softball game state from events for match: {}", matchId);
+
+        if (principal.getRole() != UserRole.ADMIN && principal.getRole() != UserRole.MANAGER) {
+            return ResponseEntity.status(403).build();
+        }
+
+        MatchDTO match = matchService.getMatchById(matchId);
+        teamAccessValidator.validateAnyTeamOrAdmin(
+                principal,
+                match.getHomeTeam() != null ? match.getHomeTeam().getId() : null,
+                match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
+        );
+
+        try {
+            BaseballGameStateDTO rebuilt = gameStateService.rebuildGameStateFromEvents(matchId);
+            return ResponseEntity.ok(Map.of(
+                    "message", "Softball game state rebuilt from events successfully",
+                    "data", rebuilt
+            ));
+        } catch (Exception e) {
+            log.error("Error rebuilding softball game state: {}", e.getMessage());
             return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
         }
     }

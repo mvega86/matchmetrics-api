@@ -45,6 +45,12 @@ public class Match extends AuditModel {
     @JoinColumn(name = "away_team_id", nullable = false)
     private Team awayTeam;
 
+    @Column(name = "home_score", nullable = false)
+    private int homeScore = 0;
+
+    @Column(name = "away_score", nullable = false)
+    private int awayScore = 0;
+
     private LocalDateTime startFirstTime;
     private LocalDateTime endFirstTime;
     private LocalDateTime startSecondTime;

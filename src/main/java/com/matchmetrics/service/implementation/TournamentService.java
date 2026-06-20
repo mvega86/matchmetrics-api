@@ -114,6 +114,7 @@ public class TournamentService implements ITournamentService {
         existing.setLocation(dto.getLocation());
         existing.setCountry(dto.getCountry());
         existing.setCategory(dto.getCategory());
+        existing.setLogoUrl(dto.getLogoUrl());
         existing = tournamentRepository.save(existing);
         return tournamentMapper.toDTO(existing);
     }

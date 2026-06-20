@@ -21,6 +21,9 @@ public class MatchDTO {
     private Long tournamentId;
     private String tournamentName;
 
+    private int homeScore;
+    private int awayScore;
+
     private SportType sportType;
 
     @NotNull(message = "Location match is required.")

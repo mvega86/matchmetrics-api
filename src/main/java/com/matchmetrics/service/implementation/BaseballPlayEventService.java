@@ -52,6 +52,26 @@ public class BaseballPlayEventService implements IBaseballPlayEventService {
                     "Pitcher PlayerMatch " + dto.getPitcherPlayerMatchId() + " does not belong to match " + dto.getMatchId());
         }
 
+        // Verify batter belongs to the batting team and pitcher to the fielding team
+        if (dto.getBatterPlayerMatchId() != null && dto.getBattingTeamId() != null) {
+            boolean valid = playerMatchRepository
+                    .findByMatchIdAndPlayerTeamId(dto.getMatchId(), dto.getBattingTeamId())
+                    .stream().anyMatch(pm -> dto.getBatterPlayerMatchId().equals(pm.getId()));
+            if (!valid) {
+                throw new IllegalArgumentException(
+                        "Batter PlayerMatch " + dto.getBatterPlayerMatchId() + " does not belong to batting team " + dto.getBattingTeamId());
+            }
+        }
+        if (dto.getPitcherPlayerMatchId() != null && dto.getFieldingTeamId() != null) {
+            boolean valid = playerMatchRepository
+                    .findByMatchIdAndPlayerTeamId(dto.getMatchId(), dto.getFieldingTeamId())
+                    .stream().anyMatch(pm -> dto.getPitcherPlayerMatchId().equals(pm.getId()));
+            if (!valid) {
+                throw new IllegalArgumentException(
+                        "Pitcher PlayerMatch " + dto.getPitcherPlayerMatchId() + " does not belong to fielding team " + dto.getFieldingTeamId());
+            }
+        }
+
         BaseballPlayEvent entity = mapper.toEntity(dto);
         entity = repository.save(entity);
         return mapper.toDTO(entity);

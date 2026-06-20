@@ -29,6 +29,9 @@ public class Tournament extends AuditModel {
     @Column(length = 500)
     private String description;
 
+    @Column(name = "logo_url", length = 500)
+    private String logoUrl;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "sport_type", nullable = false)
     private SportType sportType;

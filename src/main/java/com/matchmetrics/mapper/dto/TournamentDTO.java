@@ -23,6 +23,8 @@ public class TournamentDTO {
 
     private String description;
 
+    private String logoUrl;
+
     @NotNull(message = "Sport type is required.")
     private SportType sportType;
 

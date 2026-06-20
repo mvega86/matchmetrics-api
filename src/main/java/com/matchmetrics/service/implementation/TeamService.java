@@ -125,6 +125,9 @@ public class TeamService implements ITeamService {
         Team team = optionalTeam.get();
         team.setName(teamDTO.getName());
         team.setAcronym(teamDTO.getAcronym());
+        team.setStadium(teamDTO.getStadium());
+        team.setSportType(teamDTO.getSportType());
+        team.setPhotoUrl(teamDTO.getPhotoUrl());
 
         return teamMapper.toDTO(teamRepository.save(team));
     }

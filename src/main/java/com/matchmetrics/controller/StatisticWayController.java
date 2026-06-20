@@ -1,8 +1,8 @@
 // StatisticWayController.java
 package com.matchmetrics.controller;
 
-import com.matchmetrics.persistence.entity.StatisticWay;
-import com.matchmetrics.persistence.repository.StatisticWayRepository;
+import com.matchmetrics.mapper.dto.StatisticWayDTO;
+import com.matchmetrics.service.IStatisticWayService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -16,11 +16,11 @@ import java.util.List;
 @CrossOrigin(origins = "http://localhost:5173")
 public class StatisticWayController {
 
-    private final StatisticWayRepository repository;
+    private final IStatisticWayService statisticWayService;
 
     @GetMapping
-    public List<StatisticWay> getAll() {
+    public List<StatisticWayDTO> getAll() {
         log.info("Request received to retrieve all statistic ways...");
-        return repository.findAll();
+        return statisticWayService.getAll();
     }
 }
