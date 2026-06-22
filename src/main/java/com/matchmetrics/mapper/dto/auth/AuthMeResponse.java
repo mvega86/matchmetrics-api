@@ -14,6 +14,8 @@ public record AuthMeResponse(
         String requestedTeamName,
         String avatarUrl,
         String phone,
-        String bio
+        String bio,
+        String memberSince,
+        String lastLogin
 ) {
 }

@@ -51,6 +51,9 @@ public class AppUser extends AuditModel {
     @Column(name = "requested_sport_type", length = 20)
     private SportType requestedSportType;
 
+    @Column(name = "last_login")
+    private java.time.LocalDateTime lastLogin;
+
     @Column(name = "avatar_url", length = 500)
     private String avatarUrl;
 

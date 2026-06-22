@@ -3,6 +3,8 @@ package com.matchmetrics.service.implementation;
 import com.matchmetrics.domain.enums.AuthProvider;
 import com.matchmetrics.domain.enums.UserRole;
 import com.matchmetrics.domain.enums.UserStatus;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import com.matchmetrics.mapper.dto.auth.AuthMeResponse;
 import com.matchmetrics.mapper.dto.auth.AuthResponse;
 import com.matchmetrics.mapper.dto.auth.ChangePasswordRequest;
@@ -71,6 +73,9 @@ public class AuthService implements IAuthService {
             throw new BadCredentialsException("Usuario pendiente de aprobación o no habilitado");
         }
 
+        user.setLastLogin(LocalDateTime.now());
+        appUserRepository.save(user);
+
         String token = jwtService.generateToken(user);
         return buildResponse(user, token);
     }
@@ -109,6 +114,8 @@ public class AuthService implements IAuthService {
         appUserRepository.save(user);
     }
 
+    private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
     private AuthMeResponse toMeResponse(AppUser user) {
         return new AuthMeResponse(
                 user.getId(),
@@ -121,7 +128,9 @@ public class AuthService implements IAuthService {
                 user.getRequestedTeamName(),
                 user.getAvatarUrl(),
                 user.getPhone(),
-                user.getBio()
+                user.getBio(),
+                user.getCreatedAt() != null ? user.getCreatedAt().format(DATE_FMT) : null,
+                user.getLastLogin() != null ? user.getLastLogin().format(DATE_FMT) : null
         );
     }
 
