@@ -81,7 +81,8 @@ class PasswordResetControllerTest {
     }
 
     @Test
-    void getMethods_ShouldReturnBothMethods_WhenUserHasPhone() throws Exception {
+    void getMethods_ShouldReturnOnlyEmail_WhenUserHasPhoneButSmsDisabled() throws Exception {
+        // SMS is disabled by default (app.sms.enabled=false)
         createUser("reset@test.com", "612345678");
 
         mockMvc.perform(post("/api/v1/auth/forgot-password/methods")
@@ -91,18 +92,19 @@ class PasswordResetControllerTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.availableMethods", hasItem("EMAIL")))
-                .andExpect(jsonPath("$.availableMethods", hasItem("SMS")))
-                .andExpect(jsonPath("$.maskedPhone", notNullValue()));
+                .andExpect(jsonPath("$.availableMethods", not(hasItem("SMS"))));
     }
 
     @Test
-    void getMethods_ShouldReturn404_WhenEmailNotFound() throws Exception {
+    void getMethods_ShouldReturn200WithEmail_WhenEmailNotFound() throws Exception {
+        // P6: no revelar si el email existe — siempre 200 con EMAIL disponible
         mockMvc.perform(post("/api/v1/auth/forgot-password/methods")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 { "email": "noexiste@test.com" }
                                 """))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.availableMethods", hasItem("EMAIL")));
     }
 
     // ── sendCode ────────────────────────────────────────────────────────────
@@ -132,22 +134,22 @@ class PasswordResetControllerTest {
     }
 
     @Test
-    void sendCode_ShouldReturn404_WhenEmailNotFound() throws Exception {
+    void sendCode_ShouldReturn204_WhenEmailNotFound() throws Exception {
+        // P6: no revelar si el email existe — responder siempre genérico
         mockMvc.perform(post("/api/v1/auth/forgot-password/send")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 { "email": "noexiste@test.com", "method": "EMAIL" }
                                 """))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNoContent());
     }
 
     // ── resetPassword ───────────────────────────────────────────────────────
 
     @Test
-    void resetPassword_ShouldSucceed_WhenCodeIsValid() throws Exception {
+    void resetPassword_ShouldSucceed_WhenEmailAndCodeAreValid() throws Exception {
         AppUser user = createUser("reset@test.com", null);
 
-        // Generate token manually to get the known code
         PasswordResetToken token = new PasswordResetToken();
         token.setUser(user);
         token.setCode("123456");
@@ -158,9 +160,28 @@ class PasswordResetControllerTest {
         mockMvc.perform(post("/api/v1/auth/forgot-password/reset")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                { "code": "123456", "newPassword": "nuevaPass123" }
+                                { "email": "reset@test.com", "code": "123456", "newPassword": "nuevaPass123" }
                                 """))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void resetPassword_ShouldReturn400_WhenCodeDoesNotMatchEmail() throws Exception {
+        AppUser user = createUser("reset@test.com", null);
+
+        PasswordResetToken token = new PasswordResetToken();
+        token.setUser(user);
+        token.setCode("123456");
+        token.setMethod("EMAIL");
+        token.setExpiresAt(LocalDateTime.now().plusMinutes(15));
+        tokenRepository.save(token);
+
+        mockMvc.perform(post("/api/v1/auth/forgot-password/reset")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "email": "otro@test.com", "code": "123456", "newPassword": "nuevaPass123" }
+                                """))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -168,7 +189,7 @@ class PasswordResetControllerTest {
         mockMvc.perform(post("/api/v1/auth/forgot-password/reset")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                { "code": "000000", "newPassword": "nuevaPass123" }
+                                { "email": "reset@test.com", "code": "000000", "newPassword": "nuevaPass123" }
                                 """))
                 .andExpect(status().isBadRequest());
     }
@@ -181,13 +202,35 @@ class PasswordResetControllerTest {
         token.setUser(user);
         token.setCode("999999");
         token.setMethod("EMAIL");
-        token.setExpiresAt(LocalDateTime.now().minusMinutes(1)); // already expired
+        token.setExpiresAt(LocalDateTime.now().minusMinutes(1));
         tokenRepository.save(token);
 
         mockMvc.perform(post("/api/v1/auth/forgot-password/reset")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                { "code": "999999", "newPassword": "nuevaPass123" }
+                                { "email": "reset@test.com", "code": "999999", "newPassword": "nuevaPass123" }
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void sendCode_ShouldReturn400_WhenRateLimitExceeded() throws Exception {
+        AppUser user = createUser("reset@test.com", null);
+
+        // Create 3 recent tokens to hit the rate limit
+        for (int i = 0; i < 3; i++) {
+            PasswordResetToken token = new PasswordResetToken();
+            token.setUser(user);
+            token.setCode("10000" + i);
+            token.setMethod("EMAIL");
+            token.setExpiresAt(LocalDateTime.now().plusMinutes(15));
+            tokenRepository.save(token);
+        }
+
+        mockMvc.perform(post("/api/v1/auth/forgot-password/send")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "email": "reset@test.com", "method": "EMAIL" }
                                 """))
                 .andExpect(status().isBadRequest());
     }

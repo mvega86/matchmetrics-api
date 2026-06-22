@@ -4,14 +4,19 @@ import com.matchmetrics.persistence.entity.PasswordResetToken;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 public interface PasswordResetTokenRepository extends JpaRepository<PasswordResetToken, Long> {
 
-    Optional<PasswordResetToken> findByCodeAndUsedFalse(String code);
+    Optional<PasswordResetToken> findByUserEmailAndCodeAndUsedFalse(String email, String code);
 
     @Modifying
     @Query("UPDATE PasswordResetToken t SET t.used = true WHERE t.user.id = :userId AND t.used = false")
     void invalidateAllForUser(Long userId);
+
+    @Query("SELECT COUNT(t) FROM PasswordResetToken t WHERE t.user.email = :email AND t.createdAt >= :since")
+    long countRecentByEmail(@Param("email") String email, @Param("since") LocalDateTime since);
 }
