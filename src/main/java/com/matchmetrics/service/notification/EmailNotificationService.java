@@ -28,7 +28,13 @@ public class EmailNotificationService {
 
     public void send(String toEmail, String userName, String code) {
         if (apiKey == null || apiKey.isBlank()) {
-            log.warn("[EMAIL-STUB] RESEND_API_KEY not configured — code for {}: {}", toEmail, code);
+            // Stub mode — always visible in any console (no RESEND_API_KEY configured)
+            System.out.println("╔══════════════════════════════════════════════════════╗");
+            System.out.println("║  [EMAIL-STUB] RESEND_API_KEY no configurado         ║");
+            System.out.printf ("║  Destinatario : %-36s║%n", toEmail);
+            System.out.printf ("║  Usuario      : %-36s║%n", userName);
+            System.out.printf ("║  CÓDIGO       : %-36s║%n", code);
+            System.out.println("╚══════════════════════════════════════════════════════╝");
             return;
         }
 
