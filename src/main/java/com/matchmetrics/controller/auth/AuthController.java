@@ -32,17 +32,18 @@ public class AuthController {
         if (principal == null) {
             throw new BadCredentialsException("Usuario no autenticado");
         }
+        return authService.getProfile(principal.getId());
+    }
 
-        return new AuthMeResponse(
-                principal.getId(),
-                principal.getEmail(),
-                principal.getFullName(),
-                principal.getRole(),
-                principal.getStatus(),
-                principal.getTeamId(),
-                principal.getTeamName(),
-                principal.getRequestedTeamName()
-        );
+    @PutMapping("/profile")
+    public AuthMeResponse updateProfile(
+            @Valid @RequestBody UpdateProfileRequest request,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        if (principal == null) {
+            throw new BadCredentialsException("Usuario no autenticado");
+        }
+        return authService.updateProfile(principal.getId(), request);
     }
 
     @PutMapping("/change-password")

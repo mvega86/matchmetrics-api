@@ -3,10 +3,12 @@ package com.matchmetrics.service.implementation;
 import com.matchmetrics.domain.enums.AuthProvider;
 import com.matchmetrics.domain.enums.UserRole;
 import com.matchmetrics.domain.enums.UserStatus;
+import com.matchmetrics.mapper.dto.auth.AuthMeResponse;
 import com.matchmetrics.mapper.dto.auth.AuthResponse;
 import com.matchmetrics.mapper.dto.auth.ChangePasswordRequest;
 import com.matchmetrics.mapper.dto.auth.LoginRequest;
 import com.matchmetrics.mapper.dto.auth.RegisterRequest;
+import com.matchmetrics.mapper.dto.auth.UpdateProfileRequest;
 import com.matchmetrics.persistence.entity.AppUser;
 import com.matchmetrics.persistence.entity.Team;
 import com.matchmetrics.persistence.repository.AppUserRepository;
@@ -74,6 +76,27 @@ public class AuthService implements IAuthService {
     }
 
     @Override
+    public AuthMeResponse getProfile(Long userId) {
+        AppUser user = appUserRepository.findById(userId)
+                .orElseThrow(() -> new BadCredentialsException("Usuario no encontrado"));
+        return toMeResponse(user);
+    }
+
+    @Override
+    public AuthMeResponse updateProfile(Long userId, UpdateProfileRequest request) {
+        AppUser user = appUserRepository.findById(userId)
+                .orElseThrow(() -> new BadCredentialsException("Usuario no encontrado"));
+        user.setFullName(request.getFullName());
+        user.setPhone(request.getPhone());
+        user.setBio(request.getBio());
+        if (request.getAvatarUrl() != null) {
+            user.setAvatarUrl(request.getAvatarUrl());
+        }
+        appUserRepository.save(user);
+        return toMeResponse(user);
+    }
+
+    @Override
     public void changePassword(Long userId, ChangePasswordRequest request) {
         AppUser user = appUserRepository.findById(userId)
                 .orElseThrow(() -> new BadCredentialsException("Usuario no encontrado"));
@@ -84,6 +107,22 @@ public class AuthService implements IAuthService {
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         appUserRepository.save(user);
+    }
+
+    private AuthMeResponse toMeResponse(AppUser user) {
+        return new AuthMeResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getFullName(),
+                user.getRole(),
+                user.getStatus(),
+                user.getTeam() != null ? user.getTeam().getId() : null,
+                user.getTeam() != null ? user.getTeam().getName() : null,
+                user.getRequestedTeamName(),
+                user.getAvatarUrl(),
+                user.getPhone(),
+                user.getBio()
+        );
     }
 
     private AuthResponse buildResponse(AppUser user, String token) {

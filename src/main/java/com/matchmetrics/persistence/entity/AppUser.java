@@ -50,4 +50,13 @@ public class AppUser extends AuditModel {
     @Enumerated(EnumType.STRING)
     @Column(name = "requested_sport_type", length = 20)
     private SportType requestedSportType;
+
+    @Column(name = "avatar_url", length = 500)
+    private String avatarUrl;
+
+    @Column(length = 50)
+    private String phone;
+
+    @Column(length = 500)
+    private String bio;
 }
