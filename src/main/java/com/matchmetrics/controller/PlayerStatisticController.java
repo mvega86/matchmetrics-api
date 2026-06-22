@@ -38,6 +38,10 @@ public class PlayerStatisticController {
     ) {
         log.info("Logger: Request to get all players statistics with search: {}", search);
 
+        if (principal == null) {
+            return ResponseEntity.status(401).build();
+        }
+
         if (principal.getRole() == UserRole.ADMIN) {
             return ResponseEntity.ok(playerStatisticService.search(search));
         }

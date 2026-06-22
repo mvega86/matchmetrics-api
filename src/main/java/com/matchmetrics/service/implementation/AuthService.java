@@ -4,6 +4,7 @@ import com.matchmetrics.domain.enums.AuthProvider;
 import com.matchmetrics.domain.enums.UserRole;
 import com.matchmetrics.domain.enums.UserStatus;
 import com.matchmetrics.mapper.dto.auth.AuthResponse;
+import com.matchmetrics.mapper.dto.auth.ChangePasswordRequest;
 import com.matchmetrics.mapper.dto.auth.LoginRequest;
 import com.matchmetrics.mapper.dto.auth.RegisterRequest;
 import com.matchmetrics.persistence.entity.AppUser;
@@ -70,6 +71,19 @@ public class AuthService implements IAuthService {
 
         String token = jwtService.generateToken(user);
         return buildResponse(user, token);
+    }
+
+    @Override
+    public void changePassword(Long userId, ChangePasswordRequest request) {
+        AppUser user = appUserRepository.findById(userId)
+                .orElseThrow(() -> new BadCredentialsException("Usuario no encontrado"));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new BadCredentialsException("La contraseña actual es incorrecta");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        appUserRepository.save(user);
     }
 
     private AuthResponse buildResponse(AppUser user, String token) {

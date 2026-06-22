@@ -1,10 +1,13 @@
 package com.matchmetrics.service.implementation;
 
+import com.matchmetrics.domain.enums.MatchState;
 import com.matchmetrics.exception.EntityNotFoundException;
 import com.matchmetrics.mapper.BaseballPlayEventMapper;
 import com.matchmetrics.mapper.dto.BaseballPlayEventDTO;
 import com.matchmetrics.persistence.entity.BaseballPlayEvent;
+import com.matchmetrics.persistence.entity.Match;
 import com.matchmetrics.persistence.repository.BaseballPlayEventRepository;
+import com.matchmetrics.persistence.repository.MatchRepository;
 import com.matchmetrics.persistence.repository.PlayerMatchRepository;
 import com.matchmetrics.persistence.repository.TeamRepository;
 import com.matchmetrics.service.IBaseballPlayEventService;
@@ -23,23 +26,32 @@ public class BaseballPlayEventService implements IBaseballPlayEventService {
     private final BaseballPlayEventMapper mapper;
     private final TeamRepository teamRepository;
     private final PlayerMatchRepository playerMatchRepository;
+    private final MatchRepository matchRepository;
 
     public BaseballPlayEventService(
             BaseballPlayEventRepository repository,
             BaseballPlayEventMapper mapper,
             TeamRepository teamRepository,
-            PlayerMatchRepository playerMatchRepository
+            PlayerMatchRepository playerMatchRepository,
+            MatchRepository matchRepository
     ) {
         this.repository = repository;
         this.mapper = mapper;
         this.teamRepository = teamRepository;
         this.playerMatchRepository = playerMatchRepository;
+        this.matchRepository = matchRepository;
     }
 
     @Override
     @Transactional
     public BaseballPlayEventDTO createPlayEvent(BaseballPlayEventDTO dto) {
         log.info("Creating baseball play event for match: {}", dto.getMatchId());
+
+        Match match = matchRepository.findById(dto.getMatchId())
+                .orElseThrow(() -> new EntityNotFoundException("Match not found: " + dto.getMatchId()));
+        if (match.getState() == MatchState.FINISHED) {
+            throw new IllegalStateException("Cannot register events on a finished match.");
+        }
 
         if (dto.getBatterPlayerMatchId() != null &&
                 !playerMatchRepository.existsByIdAndMatchId(dto.getBatterPlayerMatchId(), dto.getMatchId())) {

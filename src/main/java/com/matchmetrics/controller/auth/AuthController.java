@@ -5,6 +5,7 @@ import com.matchmetrics.security.UserPrincipal;
 import com.matchmetrics.service.IAuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -42,5 +43,17 @@ public class AuthController {
                 principal.getTeamName(),
                 principal.getRequestedTeamName()
         );
+    }
+
+    @PutMapping("/change-password")
+    public ResponseEntity<Void> changePassword(
+            @Valid @RequestBody ChangePasswordRequest request,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        if (principal == null) {
+            throw new BadCredentialsException("Usuario no autenticado");
+        }
+        authService.changePassword(principal.getId(), request);
+        return ResponseEntity.noContent().build();
     }
 }
