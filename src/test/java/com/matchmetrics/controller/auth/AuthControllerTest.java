@@ -18,6 +18,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -175,5 +176,115 @@ class AuthControllerTest {
     void me_ShouldFail_WhenTokenIsMissing() throws Exception {
         mockMvc.perform(get("/api/v1/auth/me"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    // ── change-password ──────────────────────────────────────────────────────
+
+    @Test
+    void changePassword_ShouldSucceed_WhenCurrentPasswordIsCorrect() throws Exception {
+        String token = createApprovedUserAndGetToken();
+        String body = """
+                {
+                  "currentPassword": "password123",
+                  "newPassword": "newPassword456"
+                }
+                """;
+        mockMvc.perform(put("/api/v1/auth/change-password")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void changePassword_ShouldFail_WhenCurrentPasswordIsWrong() throws Exception {
+        String token = createApprovedUserAndGetToken();
+        String body = """
+                {
+                  "currentPassword": "wrong-password",
+                  "newPassword": "newPassword456"
+                }
+                """;
+        mockMvc.perform(put("/api/v1/auth/change-password")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void changePassword_ShouldReturn401_WhenNotAuthenticated() throws Exception {
+        String body = """
+                {
+                  "currentPassword": "password123",
+                  "newPassword": "newPassword456"
+                }
+                """;
+        mockMvc.perform(put("/api/v1/auth/change-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isUnauthorized());
+    }
+
+    // ── update profile ───────────────────────────────────────────────────────
+
+    @Test
+    void updateProfile_ShouldUpdateAndReturnUpdatedData() throws Exception {
+        String token = createApprovedUserAndGetToken();
+        String body = """
+                {
+                  "fullName": "Nombre Actualizado",
+                  "phone": "612345678",
+                  "bio": "Bio de prueba"
+                }
+                """;
+        mockMvc.perform(put("/api/v1/auth/profile")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.fullName", is("Nombre Actualizado")))
+                .andExpect(jsonPath("$.phone", is("612345678")))
+                .andExpect(jsonPath("$.bio", is("Bio de prueba")));
+    }
+
+    @Test
+    void updateProfile_ShouldReturn401_WhenNotAuthenticated() throws Exception {
+        String body = """
+                {
+                  "fullName": "Nombre Actualizado"
+                }
+                """;
+        mockMvc.perform(put("/api/v1/auth/profile")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isUnauthorized());
+    }
+
+    // ── helpers ──────────────────────────────────────────────────────────────
+
+    private String createApprovedUserAndGetToken() throws Exception {
+        AppUser user = new AppUser();
+        user.setFullName("Usuario Test");
+        user.setEmail("test@approved.com");
+        user.setPassword(passwordEncoder.encode("password123"));
+        user.setProvider(AuthProvider.LOCAL);
+        user.setRole(UserRole.USER);
+        user.setStatus(UserStatus.APPROVED);
+        appUserRepository.save(user);
+
+        String loginBody = """
+                {
+                  "email": "test@approved.com",
+                  "password": "password123"
+                }
+                """;
+        String response = mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginBody))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        return response.split("\"token\":\"")[1].split("\"")[0];
     }
 }
