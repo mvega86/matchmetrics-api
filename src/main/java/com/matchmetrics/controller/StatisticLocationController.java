@@ -13,7 +13,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/statistic-locations")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
 public class StatisticLocationController {
 
     private final IStatisticLocationService statisticLocationService;

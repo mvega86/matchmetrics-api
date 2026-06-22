@@ -24,7 +24,6 @@ record PitcherTrackingRequest(
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/softball/game-state")
-@CrossOrigin(origins = "http://localhost:5173")
 public class SoftballGameStateController {
 
     private final IBaseballGameStateService gameStateService;

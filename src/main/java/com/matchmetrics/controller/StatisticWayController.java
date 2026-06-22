@@ -13,7 +13,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/statistic-ways")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
 public class StatisticWayController {
 
     private final IStatisticWayService statisticWayService;

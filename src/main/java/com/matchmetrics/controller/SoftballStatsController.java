@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/softball/stats")
-@CrossOrigin(origins = "http://localhost:5173")
 @RequiredArgsConstructor
 public class SoftballStatsController {
 

@@ -19,7 +19,6 @@ import java.util.Map;
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/tournaments")
-@CrossOrigin(origins = "http://localhost:5173")
 public class TournamentController {
 
     private final ITournamentService tournamentService;
