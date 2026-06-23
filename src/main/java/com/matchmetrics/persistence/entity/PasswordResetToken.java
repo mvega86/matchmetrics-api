@@ -1,10 +1,10 @@
 package com.matchmetrics.persistence.entity;
 
+import com.matchmetrics.persistence.audit.AuditModel;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @NoArgsConstructor
-public class PasswordResetToken {
+public class PasswordResetToken extends AuditModel {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,10 +34,6 @@ public class PasswordResetToken {
 
     @Column(nullable = false)
     private boolean used = false;
-
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
 
     public boolean isExpired() {
         return LocalDateTime.now().isAfter(expiresAt);
