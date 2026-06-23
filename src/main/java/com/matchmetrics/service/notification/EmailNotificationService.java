@@ -1,5 +1,6 @@
 package com.matchmetrics.service.notification;
 
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.HtmlUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -29,11 +31,28 @@ public class EmailNotificationService {
     @Value("${app.frontend-url:http://localhost:5173}")
     private String frontendUrl;
 
+    /** true → stub permitido (local); false → RESEND_API_KEY obligatorio (producción) */
+    @Value("${app.email.stub-allowed:true}")
+    private boolean stubAllowed;
+
     private final RestTemplate restTemplate = new RestTemplate();
+
+    @PostConstruct
+    public void validate() {
+        if (!stubAllowed && (apiKey == null || apiKey.isBlank())) {
+            throw new IllegalStateException(
+                "[EMAIL] RESEND_API_KEY es obligatorio cuando EMAIL_STUB_ALLOWED=false. " +
+                "Configura la variable de entorno RESEND_API_KEY antes de arrancar en producción.");
+        }
+    }
 
     public void send(String toEmail, String userName, String code) {
         if (apiKey == null || apiKey.isBlank()) {
-            // Stub mode — siempre visible en cualquier consola de desarrollo
+            if (!stubAllowed) {
+                throw new RuntimeException(
+                    "[EMAIL] RESEND_API_KEY no configurado. El envío de emails no está disponible.");
+            }
+            // Stub local — visible en cualquier terminal
             System.out.println("╔══════════════════════════════════════════════════════╗");
             System.out.println("║  [EMAIL-STUB] RESEND_API_KEY no configurado         ║");
             System.out.printf ("║  Destinatario : %-36s║%n", maskEmail(toEmail));
@@ -72,6 +91,7 @@ public class EmailNotificationService {
     }
 
     private String buildHtml(String userName, String code) {
+        String safeUserName = HtmlUtils.htmlEscape(userName);
         String loginUrl = frontendUrl + "/login";
         return """
                 <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
@@ -92,7 +112,7 @@ public class EmailNotificationService {
                   <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0;" />
                   <p style="color: #9CA3AF; font-size: 12px;">MatchMetrics — La plataforma deportiva de tu equipo</p>
                 </div>
-                """.formatted(userName, code, loginUrl);
+                """.formatted(safeUserName, code, loginUrl);
     }
 
     private String maskEmail(String email) {
