@@ -5,6 +5,7 @@ import com.matchmetrics.security.UserPrincipal;
 import com.matchmetrics.service.IAuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -31,16 +32,29 @@ public class AuthController {
         if (principal == null) {
             throw new BadCredentialsException("Usuario no autenticado");
         }
+        return authService.getProfile(principal.getId());
+    }
 
-        return new AuthMeResponse(
-                principal.getId(),
-                principal.getEmail(),
-                principal.getFullName(),
-                principal.getRole(),
-                principal.getStatus(),
-                principal.getTeamId(),
-                principal.getTeamName(),
-                principal.getRequestedTeamName()
-        );
+    @PutMapping("/profile")
+    public AuthMeResponse updateProfile(
+            @Valid @RequestBody UpdateProfileRequest request,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        if (principal == null) {
+            throw new BadCredentialsException("Usuario no autenticado");
+        }
+        return authService.updateProfile(principal.getId(), request);
+    }
+
+    @PutMapping("/change-password")
+    public ResponseEntity<Void> changePassword(
+            @Valid @RequestBody ChangePasswordRequest request,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        if (principal == null) {
+            throw new BadCredentialsException("Usuario no autenticado");
+        }
+        authService.changePassword(principal.getId(), request);
+        return ResponseEntity.noContent().build();
     }
 }

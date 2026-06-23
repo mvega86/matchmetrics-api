@@ -2,6 +2,7 @@ package com.matchmetrics.mapper.dto;
 
 import com.matchmetrics.domain.enums.BaseballGameStatus;
 import com.matchmetrics.domain.enums.InningHalf;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -29,6 +30,7 @@ public class BaseballGameStateDTO {
     private InningHalf inningHalf;
 
     @Min(value = 0, message = "Outs cannot be negative.")
+    @Max(value = 2, message = "Outs cannot exceed 2.")
     private Integer outs;
 
     @Min(value = 0, message = "Balls cannot be negative.")

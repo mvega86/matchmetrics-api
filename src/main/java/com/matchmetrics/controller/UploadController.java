@@ -16,7 +16,6 @@ import java.util.UUID;
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/uploads")
-@CrossOrigin(origins = "http://localhost:5173")
 public class UploadController {
 
     @Value("${app.upload.dir:uploads}")

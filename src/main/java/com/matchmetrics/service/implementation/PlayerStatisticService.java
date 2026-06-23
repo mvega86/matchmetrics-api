@@ -1,5 +1,6 @@
 package com.matchmetrics.service.implementation;
 
+import com.matchmetrics.domain.enums.MatchState;
 import com.matchmetrics.exception.EntityNotFoundException;
 import com.matchmetrics.mapper.PlayerMatchMapper;
 import com.matchmetrics.mapper.StatisticMapper;
@@ -97,6 +98,10 @@ public class PlayerStatisticService implements IPlayerStatisticService {
                     log.error("Logging: PlayerMatch, with id {}, not found.", playerStatisticDTO.getPlayerMatch().getId());
                     return new EntityNotFoundException("Player match not found.");
                 });
+
+        if (playerMatch.getMatch().getState() == MatchState.FINISHED) {
+            throw new IllegalStateException("Cannot register statistics on a finished match.");
+        }
 
         Statistic statistic = statisticRepository.findById(playerStatisticDTO.getStatistic().getId())
                 .orElseThrow(() -> new EntityNotFoundException("Statistic not found"));

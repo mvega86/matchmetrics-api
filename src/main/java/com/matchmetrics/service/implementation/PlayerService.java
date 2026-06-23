@@ -25,46 +25,43 @@ public class PlayerService implements IPlayerService {
     private TeamRepository teamRepository;
     @Autowired
     private PlayerMapper playerMapper;
+
     @Override
     @Transactional
     public PlayerDTO save(PlayerDTO playerDTO) {
-        /*if (playerDTO.getFullName().equals("error")) {
-            throw new RuntimeException("Simulación de error inesperado");
-        }*/
         log.info("Saving player: {}", playerDTO.getFullName());
 
         Team team = null;
-
-        // Checking if the DTO has an associated equipment ID and look for it in the DB
         if (playerDTO.getTeamId() != null) {
             team = teamRepository.findById(playerDTO.getTeamId()).orElseThrow(
-                    () -> {
-                        log.error("Team with ID {} not found", playerDTO.getTeamId());
-                        return new EntityNotFoundException("Team with ID " + playerDTO.getTeamId() + " was not found.");
-                    });
+                () -> {
+                    log.error("Team with ID {} not found", playerDTO.getTeamId());
+                    return new EntityNotFoundException("Team with ID " + playerDTO.getTeamId() + " was not found.");
+                });
         }
 
         try {
-            // Converting the DTO to an entity by passing it the equipment found
             Player player = playerMapper.toEntity(playerDTO, team);
-            // Saving the player and return the DTO
+            if (team != null) {
+                player.getTeams().add(team);
+            }
             player = playerRepository.save(player);
             log.info("Player saved successfully");
             return playerMapper.toDTO(player);
-        } catch (Exception e){
+        } catch (Exception e) {
             log.error("Unexpected error saving player: {}", e.getMessage());
             throw new RuntimeException("Error saving player.");
         }
-
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<PlayerDTO> searchPlayers(String search) {
         if (search != null && search.startsWith("sport:")) {
             String sportStr = search.split(":", 2)[1].trim().toUpperCase();
             try {
                 var sportType = com.matchmetrics.domain.enums.SportType.valueOf(sportStr);
-                return playerRepository.findByTeam_SportTypeOrderByFullNameAsc(sportType)
+                return playerRepository.findByTeamsSportTypeOrderByFullNameAsc(sportType)
                         .stream().map(playerMapper::toDTO).collect(Collectors.toList());
             } catch (IllegalArgumentException e) {
                 return List.of();
@@ -83,19 +80,18 @@ public class PlayerService implements IPlayerService {
                 .stream()
                 .map(playerMapper::toDTO)
                 .collect(Collectors.toList());
-
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PlayerDTO getById(Long id) {
         log.info("Searching player with id {}...", id);
-        Player player = playerRepository.findById(id)
+        return playerRepository.findById(id)
+                .map(playerMapper::toDTO)
                 .orElseThrow(() -> {
                     log.error("Player with ID {} not found", id);
                     return new EntityNotFoundException("Player with ID " + id + " was not found.");
                 });
-        log.info("Player found: {}", player.getFullName());
-        return playerRepository.findById(id).map(playerMapper::toDTO).orElse(null);
     }
 
     @Override
@@ -111,37 +107,50 @@ public class PlayerService implements IPlayerService {
     }
 
     @Override
+    @Transactional
     public PlayerDTO updateStatistic(PlayerDTO playerDTO) {
         log.info("Updating player: {}", playerDTO.getFullName());
 
-        Team team = null;
+        Player player = playerRepository.findById(playerDTO.getId()).orElseThrow(() -> {
+            log.error("Player with ID {} not found", playerDTO.getId());
+            return new EntityNotFoundException("Player with ID " + playerDTO.getId() + " was not found.");
+        });
 
-        // Checking if the DTO has an associated equipment ID and look for it in the DB
+        player.setFullName(playerDTO.getFullName());
+        player.setJerseyName(playerDTO.getJerseyName());
+        player.setJerseyNumber(playerDTO.getJerseyNumber());
+        player.setBirthDate(playerDTO.getBirthDate());
+        player.setPhotoUrl(playerDTO.getPhotoUrl());
+        player.setFieldPosition(playerDTO.getFieldPosition());
+
         if (playerDTO.getTeamId() != null) {
-            team = teamRepository.findById(playerDTO.getTeamId()).orElseThrow(
-                    () -> {
-                        log.error("Team with ID {} not found", playerDTO.getTeamId());
-                        return new EntityNotFoundException("Team with ID " + playerDTO.getTeamId() + " was not found.");
-                    });
+            Team newTeam = teamRepository.findById(playerDTO.getTeamId()).orElseThrow(() -> {
+                log.error("Team with ID {} not found", playerDTO.getTeamId());
+                return new EntityNotFoundException("Team with ID " + playerDTO.getTeamId() + " was not found.");
+            });
+            // Replace team for this sport, keep teams for other sports
+            player.getTeams().removeIf(t -> t.getSportType() == newTeam.getSportType());
+            player.getTeams().add(newTeam);
+            // Update primary team when same sport or no primary team yet
+            if (player.getTeam() == null || player.getTeam().getSportType() == newTeam.getSportType()) {
+                player.setTeam(newTeam);
+            }
         }
 
         try {
-            // Converting the DTO to an entity by passing it the equipment found
-            Player player = playerMapper.toEntity(playerDTO, team);
-            // Saving the player and return the DTO
             player = playerRepository.save(player);
             log.info("Player updated successfully");
             return playerMapper.toDTO(player);
-        } catch (Exception e){
+        } catch (Exception e) {
             log.error("Unexpected error updating player: {}", e.getMessage());
             throw new RuntimeException("Error updating player.");
         }
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<PlayerDTO> searchPlayersByTeam(String search, Long teamId) {
         log.info("Searching players for authenticated team: {}", teamId);
-
         return playerRepository.findByTeamIdOrderByFullNameAsc(teamId)
                 .stream()
                 .map(playerMapper::toDTO)

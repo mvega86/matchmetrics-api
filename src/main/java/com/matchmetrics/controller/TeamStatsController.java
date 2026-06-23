@@ -13,7 +13,6 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/team-stats")
-@CrossOrigin(origins = "http://localhost:5173")
 @RequiredArgsConstructor
 public class TeamStatsController {
 

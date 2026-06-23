@@ -11,6 +11,11 @@ public record AuthMeResponse(
         UserStatus status,
         Long teamId,
         String teamName,
-        String requestedTeamName
+        String requestedTeamName,
+        String avatarUrl,
+        String phone,
+        String bio,
+        String memberSince,
+        String lastLogin
 ) {
 }

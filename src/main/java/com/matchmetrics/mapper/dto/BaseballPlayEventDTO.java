@@ -41,8 +41,11 @@ public class BaseballPlayEventDTO {
     private Long batterPlayerMatchId;
     private Long pitcherPlayerMatchId;
     private String result;
+    @Min(value = 0, message = "Runs scored cannot be negative.")
     private Integer runsScored;
+    @Min(value = 0, message = "Outs on play cannot be negative.")
     private Integer outsOnPlay;
+    @Min(value = 0, message = "RBI cannot be negative.")
     private Integer rbi;
     private String description;
     private Integer ballsBefore;

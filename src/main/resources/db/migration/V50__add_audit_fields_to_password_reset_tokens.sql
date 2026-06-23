@@ -1,0 +1,3 @@
+ALTER TABLE password_reset_tokens
+    ADD COLUMN IF NOT EXISTS updated_at  TIMESTAMP,
+    ADD COLUMN IF NOT EXISTS modified_by VARCHAR(255) DEFAULT 'SYSTEM';

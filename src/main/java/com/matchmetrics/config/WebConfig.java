@@ -12,6 +12,9 @@ public class WebConfig implements WebMvcConfigurer {
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
 
+    @Value("${app.cors.allowed-origins:http://localhost:5173}")
+    private String[] allowedOrigins;
+
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/uploads/**")
@@ -21,10 +24,8 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-//                .allowedOrigins("http://localhost:5173",
-//                                "https://app-party-bhju-l5cxohf5n-mag-apiparty.vercel.app")
-                .allowedOriginPatterns("*")
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS","PATCH")
+                .allowedOrigins(allowedOrigins)
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                 .allowedHeaders("*")
                 .allowCredentials(true);
     }
