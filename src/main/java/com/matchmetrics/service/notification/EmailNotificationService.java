@@ -6,7 +6,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
@@ -24,14 +26,17 @@ public class EmailNotificationService {
     @Value("${app.from-email:MatchMetrics <noreply@example.com>}")
     private String fromEmail;
 
+    @Value("${app.frontend-url:http://localhost:5173}")
+    private String frontendUrl;
+
     private final RestTemplate restTemplate = new RestTemplate();
 
     public void send(String toEmail, String userName, String code) {
         if (apiKey == null || apiKey.isBlank()) {
-            // Stub mode — always visible in any console (no RESEND_API_KEY configured)
+            // Stub mode — siempre visible en cualquier consola de desarrollo
             System.out.println("╔══════════════════════════════════════════════════════╗");
             System.out.println("║  [EMAIL-STUB] RESEND_API_KEY no configurado         ║");
-            System.out.printf ("║  Destinatario : %-36s║%n", toEmail);
+            System.out.printf ("║  Destinatario : %-36s║%n", maskEmail(toEmail));
             System.out.printf ("║  Usuario      : %-36s║%n", userName);
             System.out.printf ("║  CÓDIGO       : %-36s║%n", code);
             System.out.println("╚══════════════════════════════════════════════════════╝");
@@ -51,16 +56,23 @@ public class EmailNotificationService {
             );
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
-            restTemplate.postForEntity(RESEND_URL, request, String.class);
-            log.info("[EMAIL] Code sent to {}", toEmail);
+            ResponseEntity<String> response = restTemplate.postForEntity(RESEND_URL, request, String.class);
 
+            log.info("[EMAIL] Código enviado a {} | from: {} | status: {}",
+                    maskEmail(toEmail), fromEmail, response.getStatusCode().value());
+
+        } catch (HttpClientErrorException e) {
+            log.error("[EMAIL] Error enviando a {} | status: {} | body: {}",
+                    maskEmail(toEmail), e.getStatusCode().value(), e.getResponseBodyAsString());
+            throw new RuntimeException("Failed to send email. Please try again later.");
         } catch (Exception e) {
-            log.error("[EMAIL] Failed to send code to {}: {}", toEmail, e.getMessage());
+            log.error("[EMAIL] Error inesperado enviando a {}: {}", maskEmail(toEmail), e.getMessage());
             throw new RuntimeException("Failed to send email. Please try again later.");
         }
     }
 
     private String buildHtml(String userName, String code) {
+        String loginUrl = frontendUrl + "/login";
         return """
                 <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
                   <h2 style="color: #0D47A1; margin-bottom: 8px;">MatchMetrics</h2>
@@ -71,9 +83,21 @@ public class EmailNotificationService {
                   </div>
                   <p style="color: #6B7280; font-size: 14px;">Este código caduca en <strong>15 minutos</strong>.</p>
                   <p style="color: #6B7280; font-size: 14px;">Si no solicitaste este cambio, ignora este mensaje.</p>
+                  <div style="text-align: center; margin: 24px 0;">
+                    <a href="%s" style="background: #1565C0; color: white; text-decoration: none;
+                       padding: 12px 28px; border-radius: 6px; font-weight: 600; font-size: 14px;">
+                      Ir al inicio de sesión
+                    </a>
+                  </div>
                   <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0;" />
                   <p style="color: #9CA3AF; font-size: 12px;">MatchMetrics — La plataforma deportiva de tu equipo</p>
                 </div>
-                """.formatted(userName, code);
+                """.formatted(userName, code, loginUrl);
+    }
+
+    private String maskEmail(String email) {
+        int at = email.indexOf('@');
+        if (at <= 2) return email;
+        return email.substring(0, 2) + "***" + email.substring(at);
     }
 }
