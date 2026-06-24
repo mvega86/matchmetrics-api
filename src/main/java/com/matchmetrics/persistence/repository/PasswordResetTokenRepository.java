@@ -23,9 +23,9 @@ public interface PasswordResetTokenRepository extends JpaRepository<PasswordRese
 
     @Modifying
     @Query("DELETE FROM PasswordResetToken t WHERE t.expiresAt < :cutoff OR (t.used = true AND t.createdAt < :cutoff)")
-    long deleteOldTokens(@Param("cutoff") LocalDateTime cutoff);
+    int deleteOldTokens(@Param("cutoff") LocalDateTime cutoff);
 
-    default long deleteOldTokens() {
+    default int deleteOldTokens() {
         return deleteOldTokens(LocalDateTime.now().minusHours(24));
     }
 }

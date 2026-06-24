@@ -37,13 +37,13 @@ public class AuthService implements IAuthService {
 
     @Override
     public AuthResponse register(RegisterRequest request) {
-        String token = request.getInvitationToken();
-        if (token == null || token.isBlank()) {
+        String invitationToken = request.getInvitationToken();
+        if (invitationToken == null || invitationToken.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Se requiere una invitación válida para registrarse");
         }
         // Validates and marks as used atomically — throws 400/410 if invalid
-        invitationService.consumeToken(token);
+        invitationService.consumeToken(invitationToken);
 
         if (appUserRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Ya existe un usuario con ese email");
