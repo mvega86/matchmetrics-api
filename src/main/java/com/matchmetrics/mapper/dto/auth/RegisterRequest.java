@@ -25,4 +25,6 @@ public class RegisterRequest {
     private String requestedTeamName;
 
     private SportType requestedSportType;
+
+    private String invitationToken;
 }

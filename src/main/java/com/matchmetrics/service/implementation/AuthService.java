@@ -17,10 +17,13 @@ import com.matchmetrics.persistence.repository.AppUserRepository;
 import com.matchmetrics.persistence.repository.TeamRepository;
 import com.matchmetrics.security.JwtService;
 import com.matchmetrics.service.IAuthService;
+import com.matchmetrics.service.invitation.UserInvitationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -30,9 +33,18 @@ public class AuthService implements IAuthService {
     private final TeamRepository teamRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final UserInvitationService invitationService;
 
     @Override
     public AuthResponse register(RegisterRequest request) {
+        String token = request.getInvitationToken();
+        if (token == null || token.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Se requiere una invitación válida para registrarse");
+        }
+        // Validates and marks as used atomically — throws 400/410 if invalid
+        invitationService.consumeToken(token);
+
         if (appUserRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Ya existe un usuario con ese email");
         }

@@ -53,6 +53,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/register").permitAll()
                         .requestMatchers("/api/v1/auth/login").permitAll()
                         .requestMatchers("/api/v1/auth/forgot-password/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/auth/invitation/**").permitAll()
 
                         // Imágenes subidas — lectura pública, escritura autenticada
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()

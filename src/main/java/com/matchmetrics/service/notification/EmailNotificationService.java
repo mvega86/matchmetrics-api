@@ -115,6 +115,68 @@ public class EmailNotificationService {
                 """.formatted(safeUserName, code, loginUrl);
     }
 
+    public void sendInvitation(String toEmail, String inviteUrl) {
+        if (apiKey == null || apiKey.isBlank()) {
+            if (!stubAllowed) {
+                throw new RuntimeException("[EMAIL] RESEND_API_KEY no configurado. El envío de invitaciones no está disponible.");
+            }
+            System.out.println("╔══════════════════════════════════════════════════════╗");
+            System.out.println("║  [EMAIL-STUB] Invitación de registro                ║");
+            System.out.printf ("║  Destinatario : %-36s║%n", maskEmail(toEmail));
+            System.out.printf ("║  URL          : %-36s║%n", inviteUrl.length() > 36 ? inviteUrl.substring(0, 33) + "..." : inviteUrl);
+            System.out.println("╚══════════════════════════════════════════════════════╝");
+            return;
+        }
+
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(apiKey);
+
+            Map<String, Object> body = Map.of(
+                    "from", fromEmail,
+                    "to", List.of(toEmail),
+                    "subject", "Invitación para unirte a MatchMetrics",
+                    "html", buildInvitationHtml(toEmail, inviteUrl)
+            );
+
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+            ResponseEntity<String> response = restTemplate.postForEntity(RESEND_URL, request, String.class);
+
+            log.info("[EMAIL] Invitación enviada a {} | status: {}", maskEmail(toEmail), response.getStatusCode().value());
+
+        } catch (HttpClientErrorException e) {
+            log.error("[EMAIL] Error enviando invitación a {} | status: {} | body: {}",
+                    maskEmail(toEmail), e.getStatusCode().value(), e.getResponseBodyAsString());
+            throw new RuntimeException("Failed to send invitation email. Please try again later.");
+        } catch (Exception e) {
+            log.error("[EMAIL] Error inesperado enviando invitación a {}: {}", maskEmail(toEmail), e.getMessage());
+            throw new RuntimeException("Failed to send invitation email. Please try again later.");
+        }
+    }
+
+    private String buildInvitationHtml(String toEmail, String inviteUrl) {
+        String safeEmail = HtmlUtils.htmlEscape(toEmail);
+        return """
+                <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
+                  <h2 style="color: #0D47A1; margin-bottom: 8px;">MatchMetrics</h2>
+                  <p style="color: #374151;">Has sido invitado a unirte a <strong>MatchMetrics</strong>.</p>
+                  <p style="color: #374151;">Tu correo de acceso será: <strong>%s</strong></p>
+                  <p style="color: #374151;">Haz clic en el siguiente botón para crear tu cuenta:</p>
+                  <div style="text-align: center; margin: 24px 0;">
+                    <a href="%s" style="background: #1565C0; color: white; text-decoration: none;
+                       padding: 14px 32px; border-radius: 6px; font-weight: 600; font-size: 15px;">
+                      Crear mi cuenta
+                    </a>
+                  </div>
+                  <p style="color: #6B7280; font-size: 14px;">Este enlace caduca en <strong>72 horas</strong> y solo puede usarse una vez.</p>
+                  <p style="color: #6B7280; font-size: 14px;">Si no esperabas esta invitación, puedes ignorar este mensaje.</p>
+                  <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0;" />
+                  <p style="color: #9CA3AF; font-size: 12px;">MatchMetrics — La plataforma deportiva de tu equipo</p>
+                </div>
+                """.formatted(safeEmail, inviteUrl);
+    }
+
     private String maskEmail(String email) {
         int at = email.indexOf('@');
         if (at <= 2) return email;
