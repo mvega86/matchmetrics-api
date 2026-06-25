@@ -44,6 +44,10 @@ public class EmailNotificationService {
                 "[EMAIL] RESEND_API_KEY es obligatorio cuando EMAIL_STUB_ALLOWED=false. " +
                 "Configura la variable de entorno RESEND_API_KEY antes de arrancar en producción.");
         }
+        if (stubAllowed) {
+            log.warn("[EMAIL] Modo STUB activo — los emails NO se envían. " +
+                     "Configura EMAIL_STUB_ALLOWED=false y RESEND_API_KEY en producción.");
+        }
     }
 
     public void send(String toEmail, String userName, String code) {
@@ -52,13 +56,7 @@ public class EmailNotificationService {
                 throw new RuntimeException(
                     "[EMAIL] RESEND_API_KEY no configurado. El envío de emails no está disponible.");
             }
-            // Stub local — visible en cualquier terminal
-            System.out.println("╔══════════════════════════════════════════════════════╗");
-            System.out.println("║  [EMAIL-STUB] RESEND_API_KEY no configurado         ║");
-            System.out.printf ("║  Destinatario : %-36s║%n", maskEmail(toEmail));
-            System.out.printf ("║  Usuario      : %-36s║%n", userName);
-            System.out.printf ("║  CÓDIGO       : %-36s║%n", code);
-            System.out.println("╚══════════════════════════════════════════════════════╝");
+            log.info("[EMAIL-STUB] Reset code for {} | user: {} | code: {}", maskEmail(toEmail), userName, code);
             return;
         }
 
@@ -120,11 +118,7 @@ public class EmailNotificationService {
             if (!stubAllowed) {
                 throw new RuntimeException("[EMAIL] RESEND_API_KEY no configurado. El envío de invitaciones no está disponible.");
             }
-            System.out.println("╔══════════════════════════════════════════════════════╗");
-            System.out.println("║  [EMAIL-STUB] Invitación de registro                ║");
-            System.out.printf ("║  Destinatario : %-36s║%n", maskEmail(toEmail));
-            System.out.printf ("║  URL          : %-36s║%n", inviteUrl.length() > 36 ? inviteUrl.substring(0, 33) + "..." : inviteUrl);
-            System.out.println("╚══════════════════════════════════════════════════════╝");
+            log.info("[EMAIL-STUB] Invitation for {} | url: {}", maskEmail(toEmail), inviteUrl);
             return;
         }
 

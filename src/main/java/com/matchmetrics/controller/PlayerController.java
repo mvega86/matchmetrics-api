@@ -40,7 +40,11 @@ public class PlayerController {
     ) {
         log.info("Request to get all players with search: {}", search);
 
-        if (principal == null || principal.getRole() == UserRole.ADMIN) {
+        if (principal == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        if (principal.getRole() == UserRole.ADMIN) {
             return ResponseEntity.ok(playerService.searchPlayers(search));
         }
 

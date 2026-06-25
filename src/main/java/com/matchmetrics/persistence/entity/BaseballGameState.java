@@ -72,7 +72,7 @@ public class BaseballGameState extends AuditModel {
     @JoinColumn(name = "current_pitcher_player_match_id")
     private PlayerMatch currentPitcherPlayerMatch;
 
-    @OneToMany(mappedBy = "gameState", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "gameState", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<PitcherPitchCount> pitcherPitchCounts = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
