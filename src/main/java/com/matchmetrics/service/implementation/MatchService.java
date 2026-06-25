@@ -11,8 +11,10 @@ import com.matchmetrics.persistence.repository.TeamRepository;
 import com.matchmetrics.service.IMatchService;
 import com.matchmetrics.service.IPlayerMatchService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -80,14 +82,24 @@ public class MatchService implements IMatchService {
         }
 
         if (search != null && search.startsWith("team:")) {
-            Long teamId = Long.parseLong(search.split(":", 2)[1]);
+            Long teamId;
+            try {
+                teamId = Long.parseLong(search.split(":", 2)[1].trim());
+            } catch (NumberFormatException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID inválido en búsqueda");
+            }
             log.info("Searching matches by team: {}", teamId);
             return matchRepository.findByHomeTeamIdOrAwayTeamIdOrderByStartFirstTimeAsc(teamId, teamId)
                     .stream().map(matchMapper::toDTO).toList();
         }
 
         if (search != null && search.startsWith("tournament:")) {
-            Long tournamentId = Long.parseLong(search.split(":", 2)[1].trim());
+            Long tournamentId;
+            try {
+                tournamentId = Long.parseLong(search.split(":", 2)[1].trim());
+            } catch (NumberFormatException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID inválido en búsqueda");
+            }
             log.info("Searching matches by tournament: {}", tournamentId);
             return matchRepository.findByTournamentIdOrderByStartFirstTimeAsc(tournamentId)
                     .stream().map(matchMapper::toDTO).toList();

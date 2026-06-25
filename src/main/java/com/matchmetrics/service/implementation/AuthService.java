@@ -46,7 +46,8 @@ public class AuthService implements IAuthService {
         invitationService.consumeToken(invitationToken);
 
         if (appUserRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Ya existe un usuario con ese email");
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "El registro no pudo completarse. Contacta al administrador.");
         }
 
         AppUser user = new AppUser();

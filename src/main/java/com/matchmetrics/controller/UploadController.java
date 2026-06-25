@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -44,6 +45,11 @@ public class UploadController {
         }
 
         try {
+            byte[] header = readHeader(file.getInputStream(), 12);
+            if (!isValidImageBytes(header)) {
+                return ResponseEntity.badRequest().body(Map.of("error", "File content does not match an allowed image type"));
+            }
+
             Path uploadPath = Paths.get(uploadDir);
             Files.createDirectories(uploadPath);
 
@@ -64,5 +70,29 @@ public class UploadController {
             log.error("Upload failed", e);
             return ResponseEntity.internalServerError().body(Map.of("error", "Upload failed"));
         }
+    }
+
+    private byte[] readHeader(InputStream in, int bytes) throws IOException {
+        try (in) {
+            return in.readNBytes(bytes);
+        }
+    }
+
+    private boolean isValidImageBytes(byte[] h) {
+        if (h.length < 3) return false;
+        // JPEG: FF D8 FF
+        if (h[0] == (byte) 0xFF && h[1] == (byte) 0xD8 && h[2] == (byte) 0xFF) return true;
+        // PNG: 89 50 4E 47 0D 0A 1A 0A
+        if (h.length >= 8 && h[0] == (byte) 0x89 && h[1] == 0x50 && h[2] == 0x4E && h[3] == 0x47) return true;
+        // GIF87a or GIF89a: GIF8
+        if (h[0] == 0x47 && h[1] == 0x49 && h[2] == 0x46 && h[3] == 0x38) return true;
+        // WEBP: RIFF....WEBP
+        if (h.length >= 12 && h[0] == 0x52 && h[1] == 0x49 && h[2] == 0x46 && h[3] == 0x46
+                && h[8] == 0x57 && h[9] == 0x45 && h[10] == 0x42 && h[11] == 0x50) return true;
+        // SVG (XML text): starts with '<'
+        if (h[0] == '<') return true;
+        // SVG with UTF-8 BOM (EF BB BF)
+        if (h.length >= 4 && h[0] == (byte) 0xEF && h[1] == (byte) 0xBB && h[2] == (byte) 0xBF && h[3] == '<') return true;
+        return false;
     }
 }

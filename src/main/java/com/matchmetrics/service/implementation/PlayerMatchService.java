@@ -12,7 +12,9 @@ import com.matchmetrics.persistence.repository.PlayerRepository;
 import com.matchmetrics.persistence.repository.TeamRepository;
 import com.matchmetrics.service.IPlayerMatchService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -41,7 +43,12 @@ public class PlayerMatchService implements IPlayerMatchService {
     @Override
     public List<PlayerMatchDTO> search(String search) {
         if (search != null && search.startsWith("match:")) {
-            Long matchId = Long.parseLong(search.split(":")[1]);
+            Long matchId;
+            try {
+                matchId = Long.parseLong(search.split(":", 2)[1].trim());
+            } catch (NumberFormatException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID inválido en búsqueda");
+            }
             log.info("Searching players by {}...", search);
             return playerMatchRepository.findByMatchId(matchId)
                     .stream()
@@ -58,7 +65,12 @@ public class PlayerMatchService implements IPlayerMatchService {
     @Override
     public List<PlayerMatchDTO> searchByTeam(String search, Long teamId) {
         if (search != null && search.startsWith("match:")) {
-            Long matchId = Long.parseLong(search.split(":", 2)[1]);
+            Long matchId;
+            try {
+                matchId = Long.parseLong(search.split(":", 2)[1].trim());
+            } catch (NumberFormatException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID inválido en búsqueda");
+            }
 
             log.info("Searching player matches by match {} and authenticated team {}", matchId, teamId);
 

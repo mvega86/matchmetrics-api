@@ -1,8 +1,10 @@
 package com.matchmetrics.controller;
 
 import com.matchmetrics.mapper.dto.auth.*;
+import com.matchmetrics.security.LoginRateLimiter;
 import com.matchmetrics.security.UserPrincipal;
 import com.matchmetrics.service.IAuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final IAuthService authService;
+    private final LoginRateLimiter loginRateLimiter;
 
     @PostMapping("/register")
     public AuthResponse register(@Valid @RequestBody RegisterRequest request) {
@@ -23,8 +26,24 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public AuthResponse login(@Valid @RequestBody LoginRequest request) {
-        return authService.login(request);
+    public AuthResponse login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
+        String clientIp = resolveClientIp(httpRequest);
+        loginRateLimiter.checkAndRecord(clientIp);
+        try {
+            AuthResponse response = authService.login(request);
+            loginRateLimiter.reset(clientIp);
+            return response;
+        } catch (BadCredentialsException e) {
+            throw e;
+        }
+    }
+
+    private String resolveClientIp(HttpServletRequest request) {
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            return forwarded.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 
     @GetMapping("/me")

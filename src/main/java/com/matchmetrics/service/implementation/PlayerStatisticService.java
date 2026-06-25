@@ -52,7 +52,12 @@ public class PlayerStatisticService implements IPlayerStatisticService {
     @Override
     public List<PlayerStatisticDTO> search(String search) {
         if (search != null && search.startsWith("match:")) {
-            Long matchId = Long.parseLong(search.split(":")[1]);
+            Long matchId;
+            try {
+                matchId = Long.parseLong(search.split(":", 2)[1].trim());
+            } catch (NumberFormatException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID inválido en búsqueda");
+            }
             log.info("Searching players by {}...", search);
             return playerStatisticRepository.findByPlayerMatch_Match_IdOrderByCreatedAtDesc(matchId)
                     .stream()
@@ -69,7 +74,12 @@ public class PlayerStatisticService implements IPlayerStatisticService {
     @Override
     public List<PlayerStatisticDTO> searchByTeam(String search, Long teamId) {
         if (search != null && search.startsWith("match:")) {
-            Long matchId = Long.parseLong(search.split(":", 2)[1]);
+            Long matchId;
+            try {
+                matchId = Long.parseLong(search.split(":", 2)[1].trim());
+            } catch (NumberFormatException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID inválido en búsqueda");
+            }
 
             log.info("Searching player statistics by match {} and authenticated team {}", matchId, teamId);
 

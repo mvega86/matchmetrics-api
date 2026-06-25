@@ -10,8 +10,10 @@ import com.matchmetrics.persistence.repository.TeamRepository;
 import com.matchmetrics.service.IPlayerService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -68,7 +70,12 @@ public class PlayerService implements IPlayerService {
             }
         }
         if (search != null && search.startsWith("team:")) {
-            Long teamId = Long.parseLong(search.split(":")[1]);
+            Long teamId;
+            try {
+                teamId = Long.parseLong(search.split(":", 2)[1].trim());
+            } catch (NumberFormatException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID inválido en búsqueda");
+            }
             log.info("Searching players by {}...", search);
             return playerRepository.findByTeamIdOrderByFullNameAsc(teamId)
                     .stream()
