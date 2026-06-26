@@ -112,7 +112,7 @@ public class PlayerMatchController {
 
     @PutMapping()
     public ResponseEntity<Map<String, Object>> update(
-            @RequestBody PlayerMatchDTO playerMatchDTO,
+            @Valid @RequestBody PlayerMatchDTO playerMatchDTO,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         PlayerMatchDTO currentPlayerMatch = playerMatchService.getById(playerMatchDTO.getId());

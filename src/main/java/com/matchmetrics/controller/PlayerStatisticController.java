@@ -104,7 +104,7 @@ public class PlayerStatisticController {
 
     @PutMapping
     public ResponseEntity<PlayerStatisticDTO> update(
-            @RequestBody PlayerStatisticDTO dto,
+            @Valid @RequestBody PlayerStatisticDTO dto,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         PlayerStatisticDTO currentStatistic = playerStatisticService.getById(dto.getId());

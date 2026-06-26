@@ -100,7 +100,7 @@ public class SoftballPlayEventController {
     @PutMapping("/{id}")
     public ResponseEntity<Map<String, Object>> update(
             @PathVariable Long id,
-            @RequestBody BaseballPlayEventDTO dto,
+            @Valid @RequestBody BaseballPlayEventDTO dto,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         log.info("Request to update softball play event: {}", id);

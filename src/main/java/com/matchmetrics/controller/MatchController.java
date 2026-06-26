@@ -88,7 +88,7 @@ public class MatchController {
 
     @PutMapping
     public ResponseEntity<Map<String, Object>> update(
-            @RequestBody MatchDTO matchDTO,
+            @Valid @RequestBody MatchDTO matchDTO,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         MatchDTO currentMatch = matchService.getMatchById(matchDTO.getId());

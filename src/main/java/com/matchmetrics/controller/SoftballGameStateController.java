@@ -96,7 +96,7 @@ public class SoftballGameStateController {
     @PutMapping("/{matchId}")
     public ResponseEntity<Map<String, Object>> update(
             @PathVariable Long matchId,
-            @RequestBody BaseballGameStateDTO dto,
+            @Valid @RequestBody BaseballGameStateDTO dto,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         log.info("Request to update softball game state for match: {}", matchId);
@@ -127,7 +127,7 @@ public class SoftballGameStateController {
     @PutMapping("/{matchId}/pitcher")
     public ResponseEntity<Map<String, Object>> updatePitcherTracking(
             @PathVariable Long matchId,
-            @RequestBody PitcherTrackingRequest req,
+            @Valid @RequestBody PitcherTrackingRequest req,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         log.info("Request to update pitcher tracking for match: {}", matchId);

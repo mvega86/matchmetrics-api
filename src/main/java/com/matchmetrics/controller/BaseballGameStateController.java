@@ -91,7 +91,7 @@ public class BaseballGameStateController {
     @PutMapping("/{matchId}")
     public ResponseEntity<Map<String, Object>> update(
             @PathVariable Long matchId,
-            @RequestBody BaseballGameStateDTO dto,
+            @Valid @RequestBody BaseballGameStateDTO dto,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         log.info("Request to update game state for match: {}", matchId);
