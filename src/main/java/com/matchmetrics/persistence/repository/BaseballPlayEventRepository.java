@@ -100,4 +100,7 @@ public interface BaseballPlayEventRepository extends JpaRepository<BaseballPlayE
     List<BaseballPlayEvent> findAllPitchingEventsBySportTypeAndTournamentAndPlayerIds(@Param("sportType") SportType sportType,
                                                                                        @Param("tournamentId") Long tournamentId,
                                                                                        @Param("playerIds") List<Long> playerIds);
+
+    @Query(value = "SELECT ROUND(pg_total_relation_size('baseball_play_event') / 1024.0 / 1024.0, 2)", nativeQuery = true)
+    Double getTableSizeMB();
 }

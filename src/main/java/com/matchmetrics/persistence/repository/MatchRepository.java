@@ -34,4 +34,7 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
     List<Match> findBySportTypeAndStateAndTournamentId(@Param("sportType") SportType sportType,
                                                         @Param("state") MatchState state,
                                                         @Param("tournamentId") Long tournamentId);
+
+    long countByState(MatchState state);
+
 }
