@@ -28,7 +28,7 @@ public class UploadController {
     private static final long MAX_SIZE = 5 * 1024 * 1024L; // 5 MB
 
     private static final java.util.Set<String> ALLOWED_TYPES = java.util.Set.of(
-            "image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml"
+            "image/jpeg", "image/png", "image/webp", "image/gif"
     );
 
     @PostMapping
@@ -89,10 +89,6 @@ public class UploadController {
         // WEBP: RIFF....WEBP
         if (h.length >= 12 && h[0] == 0x52 && h[1] == 0x49 && h[2] == 0x46 && h[3] == 0x46
                 && h[8] == 0x57 && h[9] == 0x45 && h[10] == 0x42 && h[11] == 0x50) return true;
-        // SVG (XML text): starts with '<'
-        if (h[0] == '<') return true;
-        // SVG with UTF-8 BOM (EF BB BF)
-        if (h.length >= 4 && h[0] == (byte) 0xEF && h[1] == (byte) 0xBB && h[2] == (byte) 0xBF && h[3] == '<') return true;
         return false;
     }
 }
