@@ -191,12 +191,8 @@ public class PlayerStatisticService implements IPlayerStatisticService {
                     return new EntityNotFoundException("Player statistic with ID " + id + " was not found.");
 
                 });
-        try {
-            playerStatisticRepository.deleteById(id);
-            log.info("Player statistic with id {} delete successfully.", playerStatistic.getId());
-        }catch (Exception error){
-            log.error("Error to try to remove a player statistic:", error);
-        }
+        playerStatisticRepository.deleteById(id);
+        log.info("Player statistic with id {} deleted successfully.", playerStatistic.getId());
     }
 }
 
