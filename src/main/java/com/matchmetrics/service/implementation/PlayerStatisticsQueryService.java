@@ -16,12 +16,14 @@ import com.matchmetrics.persistence.repository.PlayerRepository;
 import com.matchmetrics.service.IPlayerStatisticsQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class PlayerStatisticsQueryService implements IPlayerStatisticsQueryService {
 
     private final BaseballPlayEventRepository eventRepo;
@@ -42,17 +44,16 @@ public class PlayerStatisticsQueryService implements IPlayerStatisticsQueryServi
 
     @Override
     public List<PlayerStatisticsSummaryDTO> getPlayerStatsList(SportType sportType, Long teamId, Long tournamentId) {
-        List<BaseballPlayEvent> battingEvents = tournamentId != null
-                ? eventRepo.findAllBattingEventsBySportTypeAndTournament(sportType, tournamentId)
-                : eventRepo.findAllBattingEventsBySportType(sportType);
-
+        // Filter by team at SQL level to avoid loading all events into memory.
+        List<BaseballPlayEvent> battingEvents;
         if (teamId != null) {
-            battingEvents = battingEvents.stream()
-                    .filter(e -> {
-                        Team t = e.getBatterPlayerMatch().getPlayer().getTeam();
-                        return t != null && teamId.equals(t.getId());
-                    })
-                    .collect(Collectors.toList());
+            battingEvents = tournamentId != null
+                    ? eventRepo.findAllBattingEventsBySportTypeAndTournamentAndTeam(sportType, tournamentId, teamId)
+                    : eventRepo.findAllBattingEventsBySportTypeAndTeam(sportType, teamId);
+        } else {
+            battingEvents = tournamentId != null
+                    ? eventRepo.findAllBattingEventsBySportTypeAndTournament(sportType, tournamentId)
+                    : eventRepo.findAllBattingEventsBySportType(sportType);
         }
 
         Map<Long, List<BaseballPlayEvent>> byPlayer = battingEvents.stream()
@@ -120,6 +121,27 @@ public class PlayerStatisticsQueryService implements IPlayerStatisticsQueryServi
             dto.setObp(formatAvg(obpVal));
             dto.setSlg(formatAvg(slgVal));
             dto.setOps(formatAvg(opsVal));
+
+            // Pitching
+            List<BaseballPlayEvent> pEvents = pitchingByPlayer.getOrDefault(playerId, Collections.emptyList());
+            int totalOuts   = pEvents.stream().mapToInt(this::outsFromEvent).sum();
+            double ipDec    = totalOuts / 3.0;
+            int pitchingK   = count(pEvents, BaseballEventType.STRIKEOUT);
+            int pitchingBB  = count(pEvents, BaseballEventType.WALK);
+            int hAllowed    = (int) pEvents.stream().filter(e -> HIT_TYPES.contains(e.getEventType())).count();
+            int earnedRuns  = pEvents.stream().mapToInt(e -> e.getRunsScored() != null ? e.getRunsScored() : 0).sum();
+            int appearances = (int) pEvents.stream().map(e -> e.getMatch().getId()).distinct().count();
+            double eraMultiplier = sportType == SportType.SOFTBALL ? 7.0 : 9.0;
+
+            dto.setPitchingAppearances(appearances);
+            dto.setIp(formatIp(totalOuts));
+            dto.setPitchingStrikeouts(pitchingK);
+            dto.setPitchingWalks(pitchingBB);
+            dto.setHitsAllowed(hAllowed);
+            dto.setEarnedRuns(earnedRuns);
+            dto.setEra(ipDec > 0 ? formatEra(earnedRuns * eraMultiplier / ipDec) : "0.00");
+            dto.setWhip(ipDec > 0 ? formatEra((hAllowed + pitchingBB) / ipDec) : "0.00");
+
             result.add(dto);
         }
 

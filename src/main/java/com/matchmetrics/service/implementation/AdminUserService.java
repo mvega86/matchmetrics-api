@@ -30,6 +30,16 @@ public class AdminUserService implements IAdminUserService {
     }
 
     @Override
+    public List<PendingUserResponse> getAllUsers(UserStatus status) {
+        List<AppUser> users = (status != null)
+                ? appUserRepository.findByStatus(status)
+                : appUserRepository.findAll();
+        return users.stream()
+                .map(this::mapToPendingUserResponse)
+                .toList();
+    }
+
+    @Override
     public PendingUserResponse approveUser(Long userId) {
         AppUser user = getUserOrThrow(userId);
 
