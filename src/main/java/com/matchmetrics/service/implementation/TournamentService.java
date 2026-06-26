@@ -229,7 +229,7 @@ public class TournamentService implements ITournamentService {
             String[] parts = matchTime.split(":");
             return LocalTime.of(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
         } catch (Exception e) {
-            return LocalTime.of(15, 0);
+            throw new IllegalArgumentException("Formato de hora inválido: '" + matchTime + "'. Use HH:mm");
         }
     }
 }
