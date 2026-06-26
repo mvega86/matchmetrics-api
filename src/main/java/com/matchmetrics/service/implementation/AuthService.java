@@ -13,6 +13,7 @@ import com.matchmetrics.mapper.dto.auth.RegisterRequest;
 import com.matchmetrics.mapper.dto.auth.UpdateProfileRequest;
 import com.matchmetrics.persistence.entity.AppUser;
 import com.matchmetrics.persistence.entity.Team;
+import com.matchmetrics.persistence.entity.UserInvitation;
 import com.matchmetrics.persistence.repository.AppUserRepository;
 import com.matchmetrics.persistence.repository.TeamRepository;
 import com.matchmetrics.security.JwtService;
@@ -43,7 +44,11 @@ public class AuthService implements IAuthService {
                     "Se requiere una invitación válida para registrarse");
         }
         // Validates and marks as used atomically — throws 400/410 if invalid
-        invitationService.consumeToken(invitationToken);
+        UserInvitation invitation = invitationService.consumeToken(invitationToken);
+        if (!invitation.getEmail().equalsIgnoreCase(request.getEmail())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "El email no coincide con la invitación");
+        }
 
         if (appUserRepository.existsByEmail(request.getEmail())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
