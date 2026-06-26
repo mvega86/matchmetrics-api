@@ -29,12 +29,12 @@ public class MatchService implements IMatchService {
     private final IPlayerMatchService playerMatchService;
     private final PlayerMatchRepository playerMatchRepository;
 
-    public MatchService(MatchRepository matchRepository, TeamRepository teamRepository, MatchMapper matchMapper, PlayerMatchRepository playerMatchRepository, IPlayerMatchService playerMatchService, PlayerMatchRepository playerMatchRepository1) {
+    public MatchService(MatchRepository matchRepository, TeamRepository teamRepository, MatchMapper matchMapper, PlayerMatchRepository playerMatchRepository, IPlayerMatchService playerMatchService) {
         this.matchRepository = matchRepository;
         this.teamRepository = teamRepository;
         this.matchMapper = matchMapper;
         this.playerMatchService = playerMatchService;
-        this.playerMatchRepository = playerMatchRepository1;
+        this.playerMatchRepository = playerMatchRepository;
     }
 
     @Override
