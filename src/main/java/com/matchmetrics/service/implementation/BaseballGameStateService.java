@@ -20,6 +20,8 @@ import com.matchmetrics.persistence.repository.PitcherPitchCountRepository;
 import com.matchmetrics.persistence.repository.PlayerMatchRepository;
 import com.matchmetrics.service.IBaseballGameStateService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -63,6 +65,7 @@ public class BaseballGameStateService implements IBaseballGameStateService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "gameState", key = "#dto.matchId")
     public BaseballGameStateDTO createGameState(BaseballGameStateDTO dto) {
         log.info("Creating baseball game state for match: {}", dto.getMatchId());
 
@@ -86,6 +89,7 @@ public class BaseballGameStateService implements IBaseballGameStateService {
     }
 
     @Override
+    @Cacheable(value = "gameState", key = "#matchId")
     public BaseballGameStateDTO getGameStateByMatchId(Long matchId) {
         log.info("Retrieving game state for match: {}", matchId);
         BaseballGameState gameState = gameStateRepository.findByMatchId(matchId)
@@ -98,6 +102,7 @@ public class BaseballGameStateService implements IBaseballGameStateService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "gameState", key = "#matchId")
     public BaseballGameStateDTO updateGameState(Long matchId, BaseballGameStateDTO dto) {
         log.info("Updating game state for match: {}", matchId);
         BaseballGameState gameState = getGameStateEntity(matchId);
@@ -234,6 +239,7 @@ public class BaseballGameStateService implements IBaseballGameStateService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "gameState", key = "#matchId")
     public BaseballGameStateDTO updateInning(Long matchId, Integer inning) {
         log.info("Updating inning for match: {} to inning: {}", matchId, inning);
         BaseballGameState gameState = getGameStateEntity(matchId);
@@ -244,6 +250,7 @@ public class BaseballGameStateService implements IBaseballGameStateService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "gameState", key = "#matchId")
     public BaseballGameStateDTO updateInningHalf(Long matchId, String inningHalf) {
         log.info("Updating inning half for match: {} to: {}", matchId, inningHalf);
         BaseballGameState gameState = getGameStateEntity(matchId);
@@ -254,6 +261,7 @@ public class BaseballGameStateService implements IBaseballGameStateService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "gameState", key = "#matchId")
     public BaseballGameStateDTO updateOuts(Long matchId, Integer outs) {
         log.info("Updating outs for match: {} to: {}", matchId, outs);
         if (outs < 0 || outs > 2) {
@@ -268,6 +276,7 @@ public class BaseballGameStateService implements IBaseballGameStateService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "gameState", key = "#matchId")
     public BaseballGameStateDTO updateBalls(Long matchId, Integer balls) {
         log.info("Updating balls for match: {} to: {}", matchId, balls);
         if (balls < 0 || balls > 3) {
@@ -282,6 +291,7 @@ public class BaseballGameStateService implements IBaseballGameStateService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "gameState", key = "#matchId")
     public BaseballGameStateDTO updateStrikes(Long matchId, Integer strikes) {
         log.info("Updating strikes for match: {} to: {}", matchId, strikes);
         if (strikes < 0 || strikes > 2) {
@@ -296,6 +306,7 @@ public class BaseballGameStateService implements IBaseballGameStateService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "gameState", key = "#matchId")
     public BaseballGameStateDTO updateBases(Long matchId, Long firstBasePlayerId, Long secondBasePlayerId, Long thirdBasePlayerId) {
         log.info("Updating bases for match: {}", matchId);
         BaseballGameState gameState = getGameStateEntity(matchId);
@@ -319,6 +330,7 @@ public class BaseballGameStateService implements IBaseballGameStateService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "gameState", key = "#matchId")
     public BaseballGameStateDTO updateScore(Long matchId, Integer homeScore, Integer awayScore) {
         log.info("Updating score for match: {} - Home: {}, Away: {}", matchId, homeScore, awayScore);
         BaseballGameState gameState = getGameStateEntity(matchId);
@@ -330,6 +342,7 @@ public class BaseballGameStateService implements IBaseballGameStateService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "gameState", key = "#matchId")
     public BaseballGameStateDTO finishGame(Long matchId) {
         log.info("Finishing game for match: {}", matchId);
         BaseballGameState gameState = getGameStateEntity(matchId);
@@ -447,6 +460,7 @@ public class BaseballGameStateService implements IBaseballGameStateService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "gameState", key = "#matchId")
     public BaseballGameStateDTO rebuildGameStateFromEvents(Long matchId) {
         log.info("Rebuilding game state from events for match: {}", matchId);
         BaseballGameState gameState = getGameStateEntity(matchId);
@@ -509,6 +523,7 @@ public class BaseballGameStateService implements IBaseballGameStateService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "gameState", key = "#matchId")
     public void deleteGameState(Long matchId) {
         log.info("Deleting game state for match: {}", matchId);
         BaseballGameState gameState = getGameStateEntity(matchId);
@@ -518,6 +533,7 @@ public class BaseballGameStateService implements IBaseballGameStateService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "gameState", key = "#matchId")
     public BaseballGameStateDTO updatePitcherTracking(Long matchId,
                                                        Long incomingPitcherPMId,
                                                        Long outgoingPitcherPMId,
