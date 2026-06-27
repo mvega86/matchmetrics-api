@@ -31,6 +31,11 @@ public class PlayerStatisticController {
         this.teamAccessValidator = teamAccessValidator;
     }
 
+    /**
+     * @deprecated Sistema A — estadísticas manuales por Statistic.
+     * Usar /api/v1/player-stats (Sistema B, derivado de BaseballPlayEvent).
+     */
+    @Deprecated
     @GetMapping
     public ResponseEntity<List<PlayerStatisticDTO>> getAll(
             @RequestParam(value = "search", required = false) String search,
@@ -38,11 +43,7 @@ public class PlayerStatisticController {
     ) {
         log.info("Logger: Request to get all players statistics with search: {}", search);
 
-        if (principal == null) {
-            return ResponseEntity.status(401).build();
-        }
-
-        if (principal.getRole() == UserRole.ADMIN) {
+        if (principal == null || principal.getRole() == UserRole.ADMIN) {
             return ResponseEntity.ok(playerStatisticService.search(search));
         }
 
@@ -55,6 +56,8 @@ public class PlayerStatisticController {
         );
     }
 
+    /** @deprecated Sistema A. Usar /api/v1/baseball/play-events o /api/v1/softball/play-events. */
+    @Deprecated
     @PostMapping
     public ResponseEntity<Map<String, Object>> save(
             @Valid @RequestBody PlayerStatisticDTO playerStatisticDTO,
@@ -79,6 +82,8 @@ public class PlayerStatisticController {
         return ResponseEntity.ok(response);
     }
 
+    /** @deprecated Sistema A. */
+    @Deprecated
     @GetMapping("/{id}")
     public ResponseEntity<PlayerStatisticDTO> getById(
             @PathVariable Long id,
@@ -102,6 +107,8 @@ public class PlayerStatisticController {
         return ResponseEntity.ok(playerStatisticDTO);
     }
 
+    /** @deprecated Sistema A. */
+    @Deprecated
     @PutMapping
     public ResponseEntity<PlayerStatisticDTO> update(
             @Valid @RequestBody PlayerStatisticDTO dto,
@@ -132,6 +139,8 @@ public class PlayerStatisticController {
         return ResponseEntity.ok(updated);
     }
 
+    /** @deprecated Sistema A. */
+    @Deprecated
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @PathVariable Long id,
