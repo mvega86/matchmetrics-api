@@ -11,6 +11,5 @@ import java.util.List;
 public class SystemHealthDTO {
     private SystemMetricsDTO metrics;
     private List<SystemAlertDTO> alerts;
-    private List<RoadmapItemDTO> roadmap;
     private LocalDateTime generatedAt;
 }

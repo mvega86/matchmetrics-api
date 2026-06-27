@@ -54,7 +54,6 @@ public class AdminHealthService {
         return SystemHealthDTO.builder()
                 .metrics(metrics)
                 .alerts(generateAlerts(totalUsers, totalEvents, activeLive))
-                .roadmap(buildRoadmap())
                 .generatedAt(LocalDateTime.now())
                 .build();
     }
@@ -130,27 +129,29 @@ public class AdminHealthService {
         }
 
         // Active live matches vs connection pool
-        if (activeLive >= 4) {
+        // Thresholds account for Caffeine cache (2s TTL on getGameStateByMatchId),
+        // which absorbs ~90% of polling load — only writes hit the DB.
+        if (activeLive >= 10) {
             alerts.add(SystemAlertDTO.builder()
                     .id("ALERT_LIVE_CRITICAL")
                     .level("CRITICAL")
-                    .title("Pool de conexiones saturado")
-                    .description("Hay " + activeLive + " partidos en vivo activos. Con HikariCP máx=5, las peticiones de polling están en cola.")
+                    .title("Pool de conexiones bajo presión alta")
+                    .description("Hay " + activeLive + " partidos en vivo. Aunque el caché absorbe las lecturas, las escrituras frecuentes pueden saturar HikariCP.")
                     .metric("active_live_matches")
                     .currentValue(activeLive)
-                    .threshold(4)
-                    .recommendation("Implementar caché in-memory del estado de juego (R-CP-01) para reducir la carga de BD por poll.")
+                    .threshold(10)
+                    .recommendation("Implementar SSE (R-MP-03) para eliminar el polling y escalar a 100+ usuarios por partido.")
                     .build());
-        } else if (activeLive >= 2) {
+        } else if (activeLive >= 6) {
             alerts.add(SystemAlertDTO.builder()
                     .id("ALERT_LIVE_WARNING")
                     .level("WARNING")
                     .title("Múltiples partidos en vivo activos")
-                    .description("Hay " + activeLive + " partidos en vivo activos. El pool de 5 conexiones puede sufrir contención con overlays abiertos.")
+                    .description("Hay " + activeLive + " partidos en vivo. El caché Caffeine (2s TTL) reduce la carga, pero vigilar la contención en escrituras.")
                     .metric("active_live_matches")
                     .currentValue(activeLive)
-                    .threshold(2)
-                    .recommendation("Considerar caché in-memory del estado de juego (R-CP-01) para liberar conexiones de BD.")
+                    .threshold(6)
+                    .recommendation("Considerar SSE (R-MP-03) para eliminar el polling por completo y liberar el pool de conexiones.")
                     .build());
         }
 
@@ -193,173 +194,4 @@ public class AdminHealthService {
         return alerts;
     }
 
-    // ── Roadmap (hardcoded from AUDITORIA_ESCALABILIDAD_ROADMAP.md) ───────────
-
-    private List<RoadmapItemDTO> buildRoadmap() {
-        return List.of(
-            // ── Corto plazo ──────────────────────────────────────────────────
-            RoadmapItemDTO.builder()
-                    .id("R-CP-01").horizon("SHORT").priority("HIGH").complexity("LOW").status("PENDING").breakingChange(false)
-                    .title("Caché in-memory para estado de juego")
-                    .description("Spring Cache con Caffeine. TTL 1s. Elimina el 90% de queries de BD en polling.")
-                    .benefit("Soporta 10× más usuarios en live sin cambiar infraestructura.")
-                    .build(),
-            RoadmapItemDTO.builder()
-                    .id("R-CP-02").horizon("SHORT").priority("HIGH").complexity("LOW").status("PENDING").breakingChange(false)
-                    .title("Documentación de API con SpringDoc / OpenAPI")
-                    .description("Añadir springdoc-openapi. Swagger UI automático en /swagger-ui.html.")
-                    .benefit("Facilita onboarding y habilita integraciones externas.")
-                    .build(),
-            RoadmapItemDTO.builder()
-                    .id("R-CP-03").horizon("SHORT").priority("HIGH").complexity("LOW").status("PENDING").breakingChange(false)
-                    .title("Error Boundary global en el frontend")
-                    .description("Componente React ErrorBoundary que envuelve toda la app.")
-                    .benefit("Evita que un error en un overlay colapse toda la aplicación en directo.")
-                    .build(),
-            RoadmapItemDTO.builder()
-                    .id("R-CP-04").horizon("SHORT").priority("HIGH").complexity("LOW").status("PENDING").breakingChange(false)
-                    .title("Pipeline CI/CD básico (GitHub Actions)")
-                    .description("Build + tests + deploy automático en merge a main para backend y frontend.")
-                    .benefit("Detecta errores de build antes de llegar a producción.")
-                    .build(),
-            RoadmapItemDTO.builder()
-                    .id("R-CP-05").horizon("SHORT").priority("MEDIUM").complexity("LOW").status("PENDING").breakingChange(false)
-                    .title("Rate limiting general en endpoints de stats y live")
-                    .description("Extender LoginRateLimiter o usar Bucket4j. Límite de 60 req/min por IP.")
-                    .benefit("Protege contra scraping masivo y ataques DoS inadvertidos.")
-                    .build(),
-            RoadmapItemDTO.builder()
-                    .id("R-CP-06").horizon("SHORT").priority("MEDIUM").complexity("LOW").status("PENDING").breakingChange(false)
-                    .title("Renombrar baseball_play_event → play_event")
-                    .description("Migración Flyway V54 de renombrado de tabla. Find+replace en repositorios.")
-                    .benefit("Elimina naming incorrecto antes de añadir más deportes.")
-                    .build(),
-            RoadmapItemDTO.builder()
-                    .id("R-CP-07").horizon("SHORT").priority("HIGH").complexity("LOW").status("PENDING").breakingChange(false)
-                    .title("Tests unitarios de reglas de negocio críticas")
-                    .description("JUnit 5 para fórmulas ERA, OBP, AVG, reglas de innings y reconstrucción de estado.")
-                    .benefit("Protege las fórmulas estadísticas contra regresiones en futuros cambios.")
-                    .build(),
-
-            // ── Medio plazo ──────────────────────────────────────────────────
-            RoadmapItemDTO.builder()
-                    .id("R-MP-01").horizon("MEDIUM").priority("HIGH").complexity("MEDIUM").status("PENDING").breakingChange(false)
-                    .title("Paginación en todos los endpoints de lista")
-                    .description("Page<T> y Pageable en Spring. Parámetros opcionales page/size (default: todos).")
-                    .benefit("Desbloquea Fase 3. Sin paginación el sistema no escala a 1.000 usuarios.")
-                    .build(),
-            RoadmapItemDTO.builder()
-                    .id("R-MP-02").horizon("MEDIUM").priority("MEDIUM").complexity("MEDIUM").status("PENDING").breakingChange(false)
-                    .title("StatsFormulas: clase de cálculo centralizada")
-                    .description("Extraer obp(), formatAvg(), formatEra(), outsFromEvent() a clase compartida.")
-                    .benefit("Elimina duplicación entre SoftballStatsService y PlayerStatisticsQueryService.")
-                    .build(),
-            RoadmapItemDTO.builder()
-                    .id("R-MP-03").horizon("MEDIUM").priority("HIGH").complexity("MEDIUM").status("PENDING").breakingChange(false)
-                    .title("Server-Sent Events (SSE) para live scoring")
-                    .description("SseEmitter en Spring Boot. EventSource en React. El servidor empuja cuando el estado cambia.")
-                    .benefit("Elimina el polling. Permite 100+ usuarios en live. Reduce carga de BD en 90%.")
-                    .build(),
-            RoadmapItemDTO.builder()
-                    .id("R-MP-04").horizon("MEDIUM").priority("MEDIUM").complexity("MEDIUM").status("PENDING").breakingChange(false)
-                    .title("Refresh tokens")
-                    .description("Tabla refresh_token + endpoint /auth/refresh. Access token de 15 min.")
-                    .benefit("Permite invalidar sesiones comprometidas. Reduce ventana de exposición de tokens.")
-                    .build(),
-            RoadmapItemDTO.builder()
-                    .id("R-MP-05").horizon("MEDIUM").priority("MEDIUM").complexity("MEDIUM").status("PENDING").breakingChange(false)
-                    .title("División de SoftballGamePanel y BaseballLiveView")
-                    .description("Extraer ScoreBoard, BatterLineup, PitcherTracker, CountDisplay. Hook useSoftballGameState.")
-                    .benefit("Componentes mantenibles, testables individualmente y reutilizables para nuevos deportes.")
-                    .build(),
-            RoadmapItemDTO.builder()
-                    .id("R-MP-06").horizon("MEDIUM").priority("MEDIUM").complexity("LOW").status("PENDING").breakingChange(false)
-                    .title("Separar migraciones de seed del esquema Flyway")
-                    .description("Mover datos de ejemplo a scripts separados no ejecutados en producción.")
-                    .benefit("Flyway queda limpio. Los entornos de producción no cargan datos de test.")
-                    .build(),
-            RoadmapItemDTO.builder()
-                    .id("R-MP-07").horizon("MEDIUM").priority("LOW").complexity("MEDIUM").status("PENDING").breakingChange(false)
-                    .title("MapStruct para conversión entidad → DTO")
-                    .description("Sustituir mappers manuales por generación automática con MapStruct.")
-                    .benefit("Elimina código repetitivo. Nuevos campos se mapean automáticamente.")
-                    .build(),
-            RoadmapItemDTO.builder()
-                    .id("R-MP-08").horizon("MEDIUM").priority("MEDIUM").complexity("LOW").status("PENDING").breakingChange(false)
-                    .title("Exportación CSV / Excel de estadísticas")
-                    .description("Nuevo endpoint GET /stats/export. Apache POI o librería CSV.")
-                    .benefit("Funcionalidad esperada por federaciones y usuarios avanzados.")
-                    .build(),
-
-            // ── Largo plazo ──────────────────────────────────────────────────
-            RoadmapItemDTO.builder()
-                    .id("R-LP-01").horizon("LONG").priority("HIGH").complexity("HIGH").status("PENDING").breakingChange(false)
-                    .title("Abstracción de evento deportivo genérico")
-                    .description("Tabla play_event con campo data JSONB para detalles específicos por deporte.")
-                    .benefit("Permite añadir nuevos deportes sin duplicar infraestructura de eventos.")
-                    .build(),
-            RoadmapItemDTO.builder()
-                    .id("R-LP-02").horizon("LONG").priority("HIGH").complexity("MEDIUM").status("PENDING").breakingChange(false)
-                    .title("Caché Redis compartida")
-                    .description("Spring Cache + Redis. Caché distribuida que sobrevive a reinicios del servidor.")
-                    .benefit("Habilita horizontal scaling. Necesaria en Fase 4 (10.000 usuarios).")
-                    .build(),
-            RoadmapItemDTO.builder()
-                    .id("R-LP-03").horizon("LONG").priority("HIGH").complexity("MEDIUM").status("PENDING").breakingChange(false)
-                    .title("Vistas materializadas de estadísticas")
-                    .description("CREATE MATERIALIZED VIEW player_stats_snapshot en PostgreSQL. Refresco al cerrar partido.")
-                    .benefit("Estadísticas pre-calculadas. Queries de stats pasan de O(N eventos) a O(1).")
-                    .build(),
-            RoadmapItemDTO.builder()
-                    .id("R-LP-04").horizon("LONG").priority("HIGH").complexity("MEDIUM").status("PENDING").breakingChange(false)
-                    .title("Archivado de temporadas antiguas")
-                    .description("Tabla play_event_archive + job batch al cierre de torneo.")
-                    .benefit("Mantiene tablas de producción pequeñas. Previene degradación de queries de stats.")
-                    .build(),
-            RoadmapItemDTO.builder()
-                    .id("R-LP-05").horizon("LONG").priority("MEDIUM").complexity("LOW").status("PENDING").breakingChange(false)
-                    .title("Perfiles Spring (dev / staging / prod)")
-                    .description("application-dev.properties, application-prod.properties. Beans distintos por entorno.")
-                    .benefit("Caché desactivada en local, activada en prod. Email real solo en prod.")
-                    .build(),
-            RoadmapItemDTO.builder()
-                    .id("R-LP-06").horizon("LONG").priority("LOW").complexity("HIGH").status("PENDING").breakingChange(true)
-                    .title("Sistema RBAC granular")
-                    .description("Roles STATISTICIAN, COMMENTATOR, etc. Permisos por acción sin modificar código.")
-                    .benefit("Nuevos tipos de usuario sin tocar SecurityConfig ni @PreAuthorize.")
-                    .build(),
-            RoadmapItemDTO.builder()
-                    .id("R-LP-07").horizon("LONG").priority("HIGH").complexity("MEDIUM").status("PENDING").breakingChange(false)
-                    .title("Monitoreo APM")
-                    .description("Grafana + Prometheus (gratuito) o Datadog. Alertas automáticas en producción.")
-                    .benefit("Visibilidad de tiempos de respuesta, queries lentas y errores en tiempo real.")
-                    .build(),
-
-            // ── Muy largo plazo ──────────────────────────────────────────────
-            RoadmapItemDTO.builder()
-                    .id("R-VLP-01").horizon("VERY_LONG").priority("HIGH").complexity("HIGH").status("PENDING").breakingChange(false)
-                    .title("WebSocket con broadcasting (reemplaza SSE)")
-                    .description("Spring WebSocket + STOMP. Broadcast a todos los subscribers de un partido.")
-                    .benefit("Latencia sub-100ms. Integración nativa con OBS. Soporta 1.000+ usuarios/partido.")
-                    .build(),
-            RoadmapItemDTO.builder()
-                    .id("R-VLP-02").horizon("VERY_LONG").priority("MEDIUM").complexity("HIGH").status("PENDING").breakingChange(false)
-                    .title("Separación lectura / escritura (CQRS parcial)")
-                    .description("PostgreSQL read replicas + routing en Spring.")
-                    .benefit("Queries pesadas de stats no compiten con escrituras de eventos live.")
-                    .build(),
-            RoadmapItemDTO.builder()
-                    .id("R-VLP-03").horizon("VERY_LONG").priority("MEDIUM").complexity("MEDIUM").status("PENDING").breakingChange(false)
-                    .title("API pública para integraciones externas")
-                    .description("Versión v2 + API keys + rate limiting por key.")
-                    .benefit("Permite a clubs, medios y apps de terceros consumir datos de MatchMetrics.")
-                    .build(),
-            RoadmapItemDTO.builder()
-                    .id("R-VLP-04").horizon("VERY_LONG").priority("LOW").complexity("HIGH").status("PENDING").breakingChange(false)
-                    .title("App móvil")
-                    .description("React Native compartiendo lógica con el frontend web.")
-                    .benefit("Acceso a live scoring y estadísticas desde el campo con tablets y móviles.")
-                    .build()
-        );
-    }
 }

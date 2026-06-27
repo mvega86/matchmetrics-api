@@ -1,5 +1,6 @@
 package com.matchmetrics.config;
 
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -14,6 +15,14 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Value("${app.cors.allowed-origins:http://localhost:5173}")
     private String[] allowedOrigins;
+
+    @PostConstruct
+    public void validateCorsOrigins() {
+        if (allowedOrigins == null || allowedOrigins.length == 0) {
+            throw new IllegalStateException(
+                "app.cors.allowed-origins must be set — CORS will block all frontend requests");
+        }
+    }
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
