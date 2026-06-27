@@ -30,4 +30,5 @@ public class PlayerDTO {
     private List<Long> teamIds;
     private String photoUrl;
     private String fieldPosition;
+    private String identificationNumber;
 }

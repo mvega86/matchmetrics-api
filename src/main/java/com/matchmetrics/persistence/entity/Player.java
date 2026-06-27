@@ -56,4 +56,7 @@ public class Player extends AuditModel {
     @Column(name = "field_position", length = 5)
     private String fieldPosition;
 
+    @Column(name = "identification_number", length = 50)
+    private String identificationNumber;
+
 }

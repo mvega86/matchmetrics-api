@@ -33,6 +33,7 @@ public class PlayerMapper {
         );
         dto.setPhotoUrl(player.getPhotoUrl());
         dto.setFieldPosition(player.getFieldPosition());
+        dto.setIdentificationNumber(player.getIdentificationNumber());
         return dto;
     }
 
@@ -46,6 +47,7 @@ public class PlayerMapper {
         p.setTeam(team);
         p.setPhotoUrl(playerDTO.getPhotoUrl());
         p.setFieldPosition(playerDTO.getFieldPosition());
+        p.setIdentificationNumber(playerDTO.getIdentificationNumber());
         return p;
     }
 }
