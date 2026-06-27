@@ -3,16 +3,19 @@ package com.matchmetrics.service.softball;
 import com.matchmetrics.domain.enums.BaseballEventType;
 import com.matchmetrics.domain.enums.BaseballGameStatus;
 import com.matchmetrics.domain.enums.InningHalf;
+import com.matchmetrics.domain.enums.MatchState;
 import com.matchmetrics.domain.enums.SportType;
 import com.matchmetrics.mapper.BaseballGameStateMapper;
 import com.matchmetrics.mapper.dto.BaseballGameStateDTO;
 import com.matchmetrics.persistence.entity.BaseballGameState;
 import com.matchmetrics.persistence.entity.BaseballPlayEvent;
 import com.matchmetrics.persistence.entity.Match;
+import com.matchmetrics.persistence.entity.PitcherPitchCount;
 import com.matchmetrics.persistence.entity.PlayerMatch;
 import com.matchmetrics.persistence.repository.BaseballGameStateRepository;
 import com.matchmetrics.persistence.repository.BaseballPlayEventRepository;
 import com.matchmetrics.persistence.repository.MatchRepository;
+import com.matchmetrics.persistence.repository.PitcherPitchCountRepository;
 import com.matchmetrics.persistence.repository.PlayerMatchRepository;
 import com.matchmetrics.service.implementation.BaseballGameStateService;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,7 +34,7 @@ import java.util.Optional;
 import java.util.ArrayList;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -42,6 +45,7 @@ class BaseballGameStateServiceSoftballTest {
     @Mock BaseballPlayEventRepository playEventRepository;
     @Mock PlayerMatchRepository playerMatchRepository;
     @Mock MatchRepository matchRepository;
+    @Mock PitcherPitchCountRepository pitcherPitchCountRepository;
     @Mock BaseballGameStateMapper mapper;
 
     @InjectMocks BaseballGameStateService service;
@@ -282,5 +286,141 @@ class BaseballGameStateServiceSoftballTest {
         assertThatThrownBy(() -> service.updateGameState(1L, dto))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("cannot occupy more than one base");
+    }
+
+    // ── rebuild — 3 outs flips TOP to BOTTOM ─────────────────────
+
+    @Test
+    void rebuild_threeOutsInTop_flipsToBottom() {
+        List<BaseballPlayEvent> events = List.of(
+            event(BaseballEventType.STRIKEOUT, batter1, 1, 0, InningHalf.TOP),
+            event(BaseballEventType.STRIKEOUT, batter2, 1, 0, InningHalf.TOP),
+            event(BaseballEventType.STRIKEOUT, batter3, 1, 0, InningHalf.TOP)
+        );
+        when(playEventRepository.findAllByMatchIdOrderByCreatedAtAsc(1L)).thenReturn(events);
+
+        service.rebuildGameStateFromEvents(1L);
+
+        BaseballGameState saved = capturedSave();
+        assertThat(saved.getCurrentInning()).isEqualTo(1);
+        assertThat(saved.getInningHalf()).isEqualTo(InningHalf.BOTTOM);
+        assertThat(saved.getOuts()).isEqualTo(0);
+    }
+
+    // ── rebuild — 6 outs (full inning) advances to inning 2 ──────
+
+    @Test
+    void rebuild_sixOuts_advancesToNextInning() {
+        List<BaseballPlayEvent> events = List.of(
+            event(BaseballEventType.STRIKEOUT, batter1, 1, 0, InningHalf.TOP),
+            event(BaseballEventType.STRIKEOUT, batter2, 1, 0, InningHalf.TOP),
+            event(BaseballEventType.STRIKEOUT, batter3, 1, 0, InningHalf.TOP),
+            event(BaseballEventType.STRIKEOUT, batter1, 1, 0, InningHalf.BOTTOM),
+            event(BaseballEventType.STRIKEOUT, batter2, 1, 0, InningHalf.BOTTOM),
+            event(BaseballEventType.STRIKEOUT, batter3, 1, 0, InningHalf.BOTTOM)
+        );
+        when(playEventRepository.findAllByMatchIdOrderByCreatedAtAsc(1L)).thenReturn(events);
+
+        service.rebuildGameStateFromEvents(1L);
+
+        BaseballGameState saved = capturedSave();
+        assertThat(saved.getCurrentInning()).isEqualTo(2);
+        assertThat(saved.getInningHalf()).isEqualTo(InningHalf.TOP);
+        assertThat(saved.getOuts()).isEqualTo(0);
+    }
+
+    // ── createGameState — softball sets totalInnings = 7 ─────────
+
+    @Test
+    void createGameState_softball_setsTotalInnings7() {
+        BaseballGameState softballState = new BaseballGameState();
+        softballState.setMatch(match);
+
+        when(gameStateRepository.existsByMatchId(1L)).thenReturn(false);
+        when(mapper.toEntity(any())).thenReturn(softballState);
+
+        BaseballGameStateDTO dto = new BaseballGameStateDTO();
+        dto.setMatchId(1L);
+        service.createGameState(dto);
+
+        ArgumentCaptor<BaseballGameState> cap = ArgumentCaptor.forClass(BaseballGameState.class);
+        verify(gameStateRepository).save(cap.capture());
+        assertThat(cap.getValue().getTotalInnings()).isEqualTo(7);
+    }
+
+    // ── createGameState — baseball sets totalInnings = 9 ─────────
+
+    @Test
+    void createGameState_baseball_setsTotalInnings9() {
+        Match baseballMatch = new Match();
+        baseballMatch.setId(2L);
+        baseballMatch.setSportType(SportType.BASEBALL);
+
+        BaseballGameState baseballState = new BaseballGameState();
+        baseballState.setMatch(baseballMatch);
+
+        when(gameStateRepository.existsByMatchId(2L)).thenReturn(false);
+        when(mapper.toEntity(any())).thenReturn(baseballState);
+
+        BaseballGameStateDTO dto = new BaseballGameStateDTO();
+        dto.setMatchId(2L);
+        service.createGameState(dto);
+
+        ArgumentCaptor<BaseballGameState> cap = ArgumentCaptor.forClass(BaseballGameState.class);
+        verify(gameStateRepository).save(cap.capture());
+        assertThat(cap.getValue().getTotalInnings()).isEqualTo(9);
+    }
+
+    // ── finishGame — sets FINISHED and syncs scores to Match ─────
+
+    @Test
+    void finishGame_setsStatusFinishedAndSyncsMatch() {
+        gameState.setHomeScore(3);
+        gameState.setAwayScore(1);
+
+        service.finishGame(1L);
+
+        BaseballGameState saved = capturedSave();
+        assertThat(saved.getStatus()).isEqualTo(BaseballGameStatus.FINISHED);
+        assertThat(match.getState()).isEqualTo(MatchState.FINISHED);
+        assertThat(match.getHomeScore()).isEqualTo(3);
+        assertThat(match.getAwayScore()).isEqualTo(1);
+        verify(matchRepository).save(match);
+    }
+
+    // ── updatePitcherTracking — persists outgoing pitch count ─────
+
+    @Test
+    void updatePitcherTracking_savesOutgoingPitchCount() {
+        when(playerMatchRepository.existsByIdAndMatchId(102L, 1L)).thenReturn(true);
+        when(playerMatchRepository.findById(102L)).thenReturn(Optional.of(batter2));
+        when(pitcherPitchCountRepository.findByGameStateIdAndPitcherPMId(anyLong(), eq(102L)))
+            .thenReturn(Optional.empty());
+        when(pitcherPitchCountRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.updatePitcherTracking(1L, null, 102L, 42);
+
+        ArgumentCaptor<PitcherPitchCount> cap = ArgumentCaptor.forClass(PitcherPitchCount.class);
+        verify(pitcherPitchCountRepository).save(cap.capture());
+        assertThat(cap.getValue().getPitchCount()).isEqualTo(42);
+    }
+
+    // ── updatePitcherTracking — restores incoming pitcher's count ─
+
+    @Test
+    void updatePitcherTracking_restoresIncomingPitchCount() {
+        PitcherPitchCount savedRecord = new PitcherPitchCount();
+        savedRecord.setPitchCount(15);
+
+        when(playerMatchRepository.existsByIdAndMatchId(103L, 1L)).thenReturn(true);
+        when(playerMatchRepository.findById(103L)).thenReturn(Optional.of(batter3));
+        when(pitcherPitchCountRepository.findByGameStateIdAndPitcherPMId(anyLong(), eq(103L)))
+            .thenReturn(Optional.of(savedRecord));
+
+        service.updatePitcherTracking(1L, 103L, null, null);
+
+        BaseballGameState saved = capturedSave();
+        assertThat(saved.getCurrentPitcherPlayerMatch()).isEqualTo(batter3);
+        assertThat(saved.getPitchCount()).isEqualTo(15);
     }
 }
