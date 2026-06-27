@@ -1,5 +1,6 @@
 package com.matchmetrics.service.implementation;
 
+import com.matchmetrics.exception.ConflictException;
 import com.matchmetrics.exception.EntityNotFoundException;
 import com.matchmetrics.mapper.dto.PlayerMatchDTO;
 import com.matchmetrics.mapper.PlayerMatchMapper;
@@ -109,7 +110,7 @@ public class PlayerMatchService implements IPlayerMatchService {
         Optional<PlayerMatch> existing = playerMatchRepository.findByMatchIdAndPlayerId(matchId, playerId);
         if (existing.isPresent()) {
             log.error("Player {} is already assigned to match {}", playerId, matchId);
-            throw new RuntimeException("Player is already assigned to this match.");
+            throw new ConflictException("Player is already assigned to this match.");
         }
 
         try {

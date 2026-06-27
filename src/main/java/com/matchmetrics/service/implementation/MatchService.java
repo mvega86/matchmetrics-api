@@ -1,5 +1,6 @@
 package com.matchmetrics.service.implementation;
 
+import com.matchmetrics.exception.ConflictException;
 import com.matchmetrics.exception.EntityNotFoundException;
 import com.matchmetrics.mapper.MatchMapper;
 import com.matchmetrics.mapper.dto.MatchDTO;
@@ -190,7 +191,7 @@ public class MatchService implements IMatchService {
                 .orElseThrow(() -> new EntityNotFoundException("PlayerMatch not found"));
 
         if (!playerMatch.getPlayerStatistics().isEmpty()) {
-            throw new IllegalStateException("Cannot delete PlayerMatch with associated statistics");
+            throw new ConflictException("Cannot delete PlayerMatch with associated statistics");
         }*/
         try {
             matchRepository.deleteById(id);

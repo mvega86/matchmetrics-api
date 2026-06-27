@@ -2,6 +2,7 @@ package com.matchmetrics.service.implementation;
 
 import com.matchmetrics.domain.enums.MatchState;
 import com.matchmetrics.exception.EntityNotFoundException;
+import com.matchmetrics.exception.ValidationException;
 import com.matchmetrics.mapper.PlayerMatchMapper;
 import com.matchmetrics.mapper.StatisticMapper;
 import com.matchmetrics.mapper.dto.PlayerStatisticDTO;
@@ -110,7 +111,7 @@ public class PlayerStatisticService implements IPlayerStatisticService {
                 });
 
         if (playerMatch.getMatch().getState() == MatchState.FINISHED) {
-            throw new IllegalStateException("Cannot register statistics on a finished match.");
+            throw new ValidationException("Cannot register statistics on a finished match.");
         }
 
         Statistic statistic = statisticRepository.findById(playerStatisticDTO.getStatistic().getId())

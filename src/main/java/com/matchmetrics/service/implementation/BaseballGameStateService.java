@@ -5,6 +5,7 @@ import com.matchmetrics.domain.enums.BaseballGameStatus;
 import com.matchmetrics.domain.enums.InningHalf;
 import com.matchmetrics.domain.enums.MatchState;
 import com.matchmetrics.domain.enums.SportType;
+import com.matchmetrics.exception.ConflictException;
 import com.matchmetrics.exception.EntityNotFoundException;
 import com.matchmetrics.mapper.BaseballGameStateMapper;
 import com.matchmetrics.mapper.dto.BaseballGameStateDTO;
@@ -71,7 +72,7 @@ public class BaseballGameStateService implements IBaseballGameStateService {
 
         if (gameStateRepository.existsByMatchId(dto.getMatchId())) {
             log.error("Game state already exists for match: {}", dto.getMatchId());
-            throw new IllegalArgumentException("Game state already exists for this match");
+            throw new ConflictException("Game state already exists for this match");
         }
 
         try {
