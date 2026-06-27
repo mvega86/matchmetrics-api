@@ -82,12 +82,13 @@ class StatisticsSecurityTest {
                 .andExpect(status().isForbidden());
     }
 
-    // ── Consulta de estadísticas acumuladas — requiere autenticación ──────────
+    // ── Consulta de estadísticas acumuladas — lectura pública ────────────────
 
     @Test
-    void playerStats_ShouldReturn401_WhenUnauthenticated() throws Exception {
+    void playerStats_ShouldReturn200_WhenUnauthenticated() throws Exception {
+        when(playerStatsService.getPlayerStatsList(any(), any(), any())).thenReturn(Collections.emptyList());
         mockMvc.perform(get("/api/v1/player-stats"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -115,9 +116,10 @@ class StatisticsSecurityTest {
     }
 
     @Test
-    void teamStats_ShouldReturn401_WhenUnauthenticated() throws Exception {
+    void teamStats_ShouldReturn200_WhenUnauthenticated() throws Exception {
+        when(teamStatsService.getTeamStatsList(any(), any())).thenReturn(Collections.emptyList());
         mockMvc.perform(get("/api/v1/team-stats"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isOk());
     }
 
     @Test

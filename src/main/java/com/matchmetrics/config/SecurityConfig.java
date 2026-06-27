@@ -91,6 +91,8 @@ public class SecurityConfig {
                                 "/api/v1/matches/**",
                                 "/api/v1/players/**",
                                 "/api/v1/player-statistics/**",
+                                "/api/v1/player-stats/**",
+                                "/api/v1/team-stats/**",
                                 "/api/v1/players-match/**",
                                 "/api/v1/field-zones/**",
                                 "/api/v1/tournaments/**",
@@ -106,12 +108,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT,    "/api/v1/statistics/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH,  "/api/v1/statistics/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/statistics/**").hasRole("ADMIN")
-
-                        // Consulta de estadísticas acumuladas — autenticado (cualquier rol)
-                        .requestMatchers(HttpMethod.GET,
-                                "/api/v1/player-stats/**",
-                                "/api/v1/team-stats/**"
-                        ).authenticated()
 
                         .requestMatchers(HttpMethod.POST,
                                 "/api/v1/players/**",
