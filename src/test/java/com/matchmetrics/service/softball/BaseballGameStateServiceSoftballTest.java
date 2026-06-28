@@ -423,4 +423,43 @@ class BaseballGameStateServiceSoftballTest {
         assertThat(saved.getCurrentPitcherPlayerMatch()).isEqualTo(batter3);
         assertThat(saved.getPitchCount()).isEqualTo(15);
     }
+
+    // ── rebuild — inning cap: softball 7, baseball 9 ─────────────
+
+    @Test
+    void rebuild_softball_afterAllSevenInnings_capsCurrentInningAtSeven() {
+        // 7 innings × 2 halves × 3 outs = 42 strikeout events
+        List<BaseballPlayEvent> events = new ArrayList<>();
+        for (int i = 0; i < 42; i++) {
+            events.add(event(BaseballEventType.STRIKEOUT, batter1, 1, 0, InningHalf.TOP));
+        }
+        when(playEventRepository.findAllByMatchIdOrderByCreatedAtAsc(1L)).thenReturn(events);
+
+        service.rebuildGameStateFromEvents(1L);
+
+        BaseballGameState saved = capturedSave();
+        assertThat(saved.getCurrentInning())
+            .as("Softball game must not exceed 7 innings")
+            .isEqualTo(7);
+    }
+
+    @Test
+    void rebuild_baseball_afterAllNineInnings_capsCurrentInningAtNine() {
+        // Override totalInnings to 9 to simulate a baseball game state
+        gameState.setTotalInnings(9);
+
+        // 9 innings × 2 halves × 3 outs = 54 strikeout events
+        List<BaseballPlayEvent> events = new ArrayList<>();
+        for (int i = 0; i < 54; i++) {
+            events.add(event(BaseballEventType.STRIKEOUT, batter1, 1, 0, InningHalf.TOP));
+        }
+        when(playEventRepository.findAllByMatchIdOrderByCreatedAtAsc(1L)).thenReturn(events);
+
+        service.rebuildGameStateFromEvents(1L);
+
+        BaseballGameState saved = capturedSave();
+        assertThat(saved.getCurrentInning())
+            .as("Baseball game must not exceed 9 innings")
+            .isEqualTo(9);
+    }
 }
