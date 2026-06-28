@@ -13,8 +13,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import com.matchmetrics.mapper.dto.ApiResponse;
+
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @RestController
@@ -40,24 +41,19 @@ public class TournamentController {
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, Object>> create(
+    public ResponseEntity<ApiResponse<TournamentDTO>> create(
             @Valid @RequestBody TournamentDTO dto,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         if (principal.getRole() != UserRole.ADMIN && principal.getRole() != UserRole.MANAGER) {
             return ResponseEntity.status(403).build();
         }
-        try {
-            TournamentDTO created = tournamentService.create(dto);
-            return ResponseEntity.ok(Map.of("message", "Tournament created successfully", "data", created));
-        } catch (Exception e) {
-            log.error("Error creating tournament: {}", e.getMessage());
-            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
-        }
+        TournamentDTO created = tournamentService.create(dto);
+        return ResponseEntity.ok(ApiResponse.ok("Tournament created successfully", created));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> update(
+    public ResponseEntity<ApiResponse<TournamentDTO>> update(
             @PathVariable Long id,
             @Valid @RequestBody TournamentDTO dto,
             @AuthenticationPrincipal UserPrincipal principal
@@ -65,13 +61,8 @@ public class TournamentController {
         if (principal.getRole() != UserRole.ADMIN && principal.getRole() != UserRole.MANAGER) {
             return ResponseEntity.status(403).build();
         }
-        try {
-            TournamentDTO updated = tournamentService.update(id, dto);
-            return ResponseEntity.ok(Map.of("message", "Tournament updated successfully", "data", updated));
-        } catch (Exception e) {
-            log.error("Error updating tournament {}: {}", id, e.getMessage());
-            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
-        }
+        TournamentDTO updated = tournamentService.update(id, dto);
+        return ResponseEntity.ok(ApiResponse.ok("Tournament updated successfully", updated));
     }
 
     @DeleteMapping("/{id}")
@@ -82,13 +73,8 @@ public class TournamentController {
         if (principal.getRole() != UserRole.ADMIN) {
             return ResponseEntity.status(403).build();
         }
-        try {
-            tournamentService.delete(id);
-            return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            log.error("Error deleting tournament {}: {}", id, e.getMessage());
-            return ResponseEntity.status(400).build();
-        }
+        tournamentService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 
     // ─── Team management ────────────────────────────────────────────────────────
@@ -99,7 +85,7 @@ public class TournamentController {
     }
 
     @PostMapping("/{id}/teams/{teamId}")
-    public ResponseEntity<Map<String, Object>> addTeam(
+    public ResponseEntity<ApiResponse<TournamentDTO>> addTeam(
             @PathVariable Long id,
             @PathVariable Long teamId,
             @AuthenticationPrincipal UserPrincipal principal
@@ -107,17 +93,12 @@ public class TournamentController {
         if (principal.getRole() != UserRole.ADMIN && principal.getRole() != UserRole.MANAGER) {
             return ResponseEntity.status(403).build();
         }
-        try {
-            TournamentDTO updated = tournamentService.addTeam(id, teamId);
-            return ResponseEntity.ok(Map.of("message", "Team added to tournament", "data", updated));
-        } catch (Exception e) {
-            log.error("Error adding team {} to tournament {}: {}", teamId, id, e.getMessage());
-            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
-        }
+        TournamentDTO updated = tournamentService.addTeam(id, teamId);
+        return ResponseEntity.ok(ApiResponse.ok("Team added to tournament", updated));
     }
 
     @DeleteMapping("/{id}/teams/{teamId}")
-    public ResponseEntity<Map<String, Object>> removeTeam(
+    public ResponseEntity<ApiResponse<TournamentDTO>> removeTeam(
             @PathVariable Long id,
             @PathVariable Long teamId,
             @AuthenticationPrincipal UserPrincipal principal
@@ -125,19 +106,14 @@ public class TournamentController {
         if (principal.getRole() != UserRole.ADMIN && principal.getRole() != UserRole.MANAGER) {
             return ResponseEntity.status(403).build();
         }
-        try {
-            TournamentDTO updated = tournamentService.removeTeam(id, teamId);
-            return ResponseEntity.ok(Map.of("message", "Team removed from tournament", "data", updated));
-        } catch (Exception e) {
-            log.error("Error removing team {} from tournament {}: {}", teamId, id, e.getMessage());
-            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
-        }
+        TournamentDTO updated = tournamentService.removeTeam(id, teamId);
+        return ResponseEntity.ok(ApiResponse.ok("Team removed from tournament", updated));
     }
 
     // ─── Match generation ────────────────────────────────────────────────────────
 
     @PostMapping("/{id}/generate")
-    public ResponseEntity<Map<String, Object>> generateMatches(
+    public ResponseEntity<ApiResponse<List<MatchDTO>>> generateMatches(
             @PathVariable Long id,
             @Valid @RequestBody GenerateMatchesRequestDTO request,
             @AuthenticationPrincipal UserPrincipal principal
@@ -145,16 +121,8 @@ public class TournamentController {
         if (principal.getRole() != UserRole.ADMIN && principal.getRole() != UserRole.MANAGER) {
             return ResponseEntity.status(403).build();
         }
-        try {
-            List<MatchDTO> matches = tournamentService.generateMatches(
-                    id, request.getType(), request.getStartDate(), request.getMatchTime());
-            return ResponseEntity.ok(Map.of(
-                    "message", "Partidos generados: " + matches.size(),
-                    "data", matches
-            ));
-        } catch (Exception e) {
-            log.error("Error generating matches for tournament {}: {}", id, e.getMessage());
-            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
-        }
+        List<MatchDTO> matches = tournamentService.generateMatches(
+                id, request.getType(), request.getStartDate(), request.getMatchTime());
+        return ResponseEntity.ok(ApiResponse.ok("Partidos generados: " + matches.size(), matches));
     }
 }

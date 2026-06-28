@@ -12,8 +12,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
+import com.matchmetrics.mapper.dto.ApiResponse;
+
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/matches")
@@ -32,7 +33,7 @@ public class MatchController {
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, Object>> save(
+    public ResponseEntity<ApiResponse<MatchDTO>> save(
             @Valid @RequestBody MatchDTO matchDTO,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
@@ -45,10 +46,7 @@ public class MatchController {
         log.info("Request to create match: {}", matchDTO);
         MatchDTO saved = matchService.createMatch(matchDTO);
 
-        return ResponseEntity.ok(Map.of(
-                "message", "Successfully saved match!!!",
-                "data", saved
-        ));
+        return ResponseEntity.ok(ApiResponse.ok("Successfully saved match!!!", saved));
     }
 
     @GetMapping
@@ -87,7 +85,7 @@ public class MatchController {
     }
 
     @PutMapping
-    public ResponseEntity<Map<String, Object>> update(
+    public ResponseEntity<ApiResponse<MatchDTO>> update(
             @Valid @RequestBody MatchDTO matchDTO,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
@@ -108,10 +106,7 @@ public class MatchController {
         log.info("Request to update match: {}", matchDTO.getHomeTeam() + " VS " + matchDTO.getAwayTeam());
         MatchDTO updated = matchService.updateMatch(matchDTO);
 
-        return ResponseEntity.ok(Map.of(
-                "message", "Successfully updated match!!!",
-                "data", updated
-        ));
+        return ResponseEntity.ok(ApiResponse.ok("Successfully updated match!!!", updated));
     }
 
     @DeleteMapping("/{id}")

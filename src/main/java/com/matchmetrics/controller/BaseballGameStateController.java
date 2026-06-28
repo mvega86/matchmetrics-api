@@ -13,7 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
+import com.matchmetrics.mapper.dto.ApiResponse;
 
 @Slf4j
 @RestController
@@ -35,7 +35,7 @@ public class BaseballGameStateController {
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, Object>> save(
+    public ResponseEntity<ApiResponse<BaseballGameStateDTO>> save(
             @Valid @RequestBody BaseballGameStateDTO dto,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
@@ -53,16 +53,8 @@ public class BaseballGameStateController {
                 match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
         );
 
-        try {
-            BaseballGameStateDTO created = gameStateService.createGameState(dto);
-            return ResponseEntity.ok(Map.of(
-                    "message", "Game state saved successfully",
-                    "data", created
-            ));
-        } catch (Exception e) {
-            log.error("Error saving game state: {}", e.getMessage());
-            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
-        }
+        BaseballGameStateDTO created = gameStateService.createGameState(dto);
+        return ResponseEntity.ok(ApiResponse.ok("Game state saved successfully", created));
     }
 
     @GetMapping("/{matchId}")
@@ -79,17 +71,11 @@ public class BaseballGameStateController {
                 match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
         );
 
-        try {
-            BaseballGameStateDTO gameState = gameStateService.getGameStateByMatchId(matchId);
-            return ResponseEntity.ok(gameState);
-        } catch (Exception e) {
-            log.error("Error retrieving game state: {}", e.getMessage());
-            return ResponseEntity.status(404).build();
-        }
+        return ResponseEntity.ok(gameStateService.getGameStateByMatchId(matchId));
     }
 
     @PutMapping("/{matchId}")
-    public ResponseEntity<Map<String, Object>> update(
+    public ResponseEntity<ApiResponse<BaseballGameStateDTO>> update(
             @PathVariable Long matchId,
             @Valid @RequestBody BaseballGameStateDTO dto,
             @AuthenticationPrincipal UserPrincipal principal
@@ -107,16 +93,8 @@ public class BaseballGameStateController {
                 match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
         );
 
-        try {
-            BaseballGameStateDTO updated = gameStateService.updateGameState(matchId, dto);
-            return ResponseEntity.ok(Map.of(
-                    "message", "Game state updated successfully",
-                    "data", updated
-            ));
-        } catch (Exception e) {
-            log.error("Error updating game state: {}", e.getMessage());
-            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
-        }
+        BaseballGameStateDTO updated = gameStateService.updateGameState(matchId, dto);
+        return ResponseEntity.ok(ApiResponse.ok("Game state updated successfully", updated));
     }
 
     @DeleteMapping("/{matchId}")
@@ -130,12 +108,7 @@ public class BaseballGameStateController {
             return ResponseEntity.status(403).build();
         }
 
-        try {
-            gameStateService.deleteGameState(matchId);
-            return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            log.error("Error deleting game state: {}", e.getMessage());
-            return ResponseEntity.status(400).build();
-        }
+        gameStateService.deleteGameState(matchId);
+        return ResponseEntity.noContent().build();
     }
 }

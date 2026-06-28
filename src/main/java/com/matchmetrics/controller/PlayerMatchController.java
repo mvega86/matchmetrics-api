@@ -16,9 +16,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
-import java.util.HashMap;
+import com.matchmetrics.mapper.dto.ApiResponse;
+
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/players-match")
@@ -61,7 +61,7 @@ public class PlayerMatchController {
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, Object>> save(
+    public ResponseEntity<ApiResponse<PlayerMatchDTO>> save(
             @Valid @RequestBody PlayerMatchDTO dto,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
@@ -82,11 +82,7 @@ public class PlayerMatchController {
         log.info("Assigning player {} to match {}", dto.getPlayer().getId(), dto.getMatch().getId());
         PlayerMatchDTO saved = playerMatchService.save(dto);
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "Player match assigned successfully");
-        response.put("data", saved);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.ok("Player match assigned successfully", saved));
     }
 
     @GetMapping("/{id}")
@@ -111,7 +107,7 @@ public class PlayerMatchController {
     }
 
     @PutMapping()
-    public ResponseEntity<Map<String, Object>> update(
+    public ResponseEntity<ApiResponse<PlayerMatchDTO>> update(
             @Valid @RequestBody PlayerMatchDTO playerMatchDTO,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
@@ -130,10 +126,7 @@ public class PlayerMatchController {
         log.info("Request to update playerMatch, ID: {}", playerMatchDTO.getId());
         PlayerMatchDTO playerMatchDTO1 = playerMatchService.updatePlayerMatch(playerMatchDTO);
 
-        return ResponseEntity.ok(Map.of(
-                "message", "Player match updated successfully!!!",
-                "data", playerMatchDTO1
-        ));
+        return ResponseEntity.ok(ApiResponse.ok("Player match updated successfully!!!", playerMatchDTO1));
     }
 
     @DeleteMapping("/{id}")

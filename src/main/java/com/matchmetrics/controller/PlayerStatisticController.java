@@ -14,9 +14,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
-import java.util.HashMap;
+import com.matchmetrics.mapper.dto.ApiResponse;
+
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/player-statistics")
@@ -59,7 +59,7 @@ public class PlayerStatisticController {
     /** @deprecated Sistema A. Usar /api/v1/baseball/play-events o /api/v1/softball/play-events. */
     @Deprecated
     @PostMapping
-    public ResponseEntity<Map<String, Object>> save(
+    public ResponseEntity<ApiResponse<PlayerStatisticDTO>> save(
             @Valid @RequestBody PlayerStatisticDTO playerStatisticDTO,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
@@ -75,11 +75,7 @@ public class PlayerStatisticController {
         log.info("Assigning statistics to players with ID: {}", playerStatisticDTO.getId());
         PlayerStatisticDTO createdStat = playerStatisticService.createPlayerStatistic(playerStatisticDTO);
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "Statistic assigned successfully!!!");
-        response.put("data", createdStat);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.ok("Statistic assigned successfully!!!", createdStat));
     }
 
     /** @deprecated Sistema A. */

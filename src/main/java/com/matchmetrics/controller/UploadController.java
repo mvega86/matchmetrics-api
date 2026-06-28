@@ -2,16 +2,17 @@ package com.matchmetrics.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -31,23 +32,25 @@ public class UploadController {
             "image/jpeg", "image/png", "image/webp", "image/gif"
     );
 
+    record UploadResponse(String url) {}
+
     @PostMapping
-    public ResponseEntity<?> upload(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<UploadResponse> upload(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "No file provided"));
+            throw new IllegalArgumentException("No file provided");
         }
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_TYPES.contains(contentType)) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Only image files are allowed"));
+            throw new IllegalArgumentException("Only image files are allowed");
         }
         if (file.getSize() > MAX_SIZE) {
-            return ResponseEntity.badRequest().body(Map.of("error", "File exceeds 5 MB limit"));
+            throw new IllegalArgumentException("File exceeds 5 MB limit");
         }
 
         try {
             byte[] header = readHeader(file.getInputStream(), 12);
             if (!isValidImageBytes(header)) {
-                return ResponseEntity.badRequest().body(Map.of("error", "File content does not match an allowed image type"));
+                throw new IllegalArgumentException("File content does not match an allowed image type");
             }
 
             Path uploadPath = Paths.get(uploadDir);
@@ -64,11 +67,11 @@ public class UploadController {
 
             String url = baseUrl + "/uploads/" + filename;
             log.info("File uploaded: {}", url);
-            return ResponseEntity.ok(Map.of("url", url));
+            return ResponseEntity.ok(new UploadResponse(url));
 
         } catch (IOException e) {
             log.error("Upload failed", e);
-            return ResponseEntity.internalServerError().body(Map.of("error", "Upload failed"));
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Upload failed", e);
         }
     }
 

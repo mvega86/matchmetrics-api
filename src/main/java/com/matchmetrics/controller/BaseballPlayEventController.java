@@ -13,8 +13,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import com.matchmetrics.mapper.dto.ApiResponse;
+
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @RestController
@@ -36,7 +37,7 @@ public class BaseballPlayEventController {
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, Object>> create(
+    public ResponseEntity<ApiResponse<BaseballPlayEventDTO>> create(
             @Valid @RequestBody BaseballPlayEventDTO dto,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
@@ -54,16 +55,8 @@ public class BaseballPlayEventController {
                 match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
         );
 
-        try {
-            BaseballPlayEventDTO created = playEventService.createPlayEvent(dto);
-            return ResponseEntity.ok(Map.of(
-                    "message", "Play event created successfully",
-                    "data", created
-            ));
-        } catch (Exception e) {
-            log.error("Error creating play event: {}", e.getMessage());
-            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
-        }
+        BaseballPlayEventDTO created = playEventService.createPlayEvent(dto);
+        return ResponseEntity.ok(ApiResponse.ok("Play event created successfully", created));
     }
 
     @GetMapping("/{id}")
@@ -93,7 +86,7 @@ public class BaseballPlayEventController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> update(
+    public ResponseEntity<ApiResponse<BaseballPlayEventDTO>> update(
             @PathVariable Long id,
             @Valid @RequestBody BaseballPlayEventDTO dto,
             @AuthenticationPrincipal UserPrincipal principal
@@ -113,16 +106,8 @@ public class BaseballPlayEventController {
                 match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
         );
 
-        try {
-            BaseballPlayEventDTO updated = playEventService.updatePlayEvent(id, dto);
-            return ResponseEntity.ok(Map.of(
-                    "message", "Play event updated successfully",
-                    "data", updated
-            ));
-        } catch (Exception e) {
-            log.error("Error updating play event {}: {}", id, e.getMessage());
-            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
-        }
+        BaseballPlayEventDTO updated = playEventService.updatePlayEvent(id, dto);
+        return ResponseEntity.ok(ApiResponse.ok("Play event updated successfully", updated));
     }
 
     @DeleteMapping("/match/{matchId}")
@@ -137,13 +122,8 @@ public class BaseballPlayEventController {
             return ResponseEntity.status(403).build();
         }
 
-        try {
-            playEventService.deleteAllByMatchId(matchId);
-            return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            log.error("Error deleting play events for match {}: {}", matchId, e.getMessage());
-            return ResponseEntity.status(400).build();
-        }
+        playEventService.deleteAllByMatchId(matchId);
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}")
@@ -166,12 +146,7 @@ public class BaseballPlayEventController {
                 match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
         );
 
-        try {
-            playEventService.deletePlayEvent(id);
-            return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            log.error("Error deleting play event {}: {}", id, e.getMessage());
-            return ResponseEntity.status(400).build();
-        }
+        playEventService.deletePlayEvent(id);
+        return ResponseEntity.noContent().build();
     }
 }
