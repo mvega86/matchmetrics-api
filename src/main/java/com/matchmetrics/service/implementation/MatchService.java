@@ -41,30 +41,30 @@ public class MatchService implements IMatchService {
     @Override
     @Transactional
     public MatchDTO createMatch(MatchDTO matchDTO) {
-        log.info("Logger: Creating match...");
+        log.info("Creating match...");
         teamRepository.findById(matchDTO.getHomeTeam().getId())
                 .orElseThrow(() -> {
-                    log.error("Logger: Home team, with id {}, not found", matchDTO.getHomeTeam().getId());
+                    log.error("Home team, with id {}, not found", matchDTO.getHomeTeam().getId());
                     return new EntityNotFoundException("Home team not found");
                 });
         teamRepository.findById(matchDTO.getAwayTeam().getId())
                 .orElseThrow(() -> {
-                    log.error("Logger: Away team, with id {}, not found", matchDTO.getAwayTeam().getId());
+                    log.error("Away team, with id {}, not found", matchDTO.getAwayTeam().getId());
                     return new EntityNotFoundException("Away team not found");
                 });
 
         if (matchDTO.getHomeTeam().getId().equals(matchDTO.getAwayTeam().getId())) {
-            log.error("Logger: The home and away teams cannot be the same.");
+            log.error("The home and away teams cannot be the same.");
             throw new IllegalArgumentException("The home and away teams cannot be the same.");
         }
 
         try {
             Match match = matchMapper.toEntity(matchDTO);
             match = matchRepository.save(match);
-            log.info("Logger: Match created successfully");
+            log.info("Match created successfully");
             return matchMapper.toDTO(match);
         }catch (Exception e){
-            log.error("Logger: Error creating match: {}", e.getMessage());
+            log.error("Error creating match: {}", e.getMessage());
             throw new RuntimeException("Error creating match.");
         }
     }
@@ -130,13 +130,13 @@ public class MatchService implements IMatchService {
 
     @Override
     public MatchDTO getMatchById(Long matchId) {
-        log.info("Logger: Searching match with id {}...", matchId);
+        log.info("Searching match with id {}...", matchId);
         Match match = matchRepository.findById(matchId)
                 .orElseThrow(() -> {
-                    log.error("Logger: Match with ID {} not found", matchId);
+                    log.error("Match with ID {} not found", matchId);
                     return new EntityNotFoundException("Match not found");
                 });
-        log.info("Logger: Match found: {}", match.getHomeTeam().getAcronym()+" - "+match.getAwayTeam().getAcronym());
+        log.info("Match found: {}", match.getHomeTeam().getAcronym()+" - "+match.getAwayTeam().getAcronym());
         return matchMapper.toDTO(match);
     }
 
@@ -156,15 +156,15 @@ public class MatchService implements IMatchService {
 
         List<PlayerMatch> players = existing.getPlayerMatches();
 
-        log.info("Logger: Updating match times for match ID: {}", matchDTO.getId());
+        log.info("Updating match times for match ID: {}", matchDTO.getId());
 
         Match match = matchMapper.toEntity(matchDTO);
         match.setPlayerMatches(existing.getPlayerMatches());
         matchRepository.save(match);
-        log.info("Logger: Match times updated.");
+        log.info("Match times updated.");
 
         if (newStart != null && (oldStart == null || !oldStart.equals(newStart))) {
-            log.info("Logger: Updating players match intime field...");
+            log.info("Updating players match intime field...");
             players.stream()
                     .filter(pm ->
                             (oldStart == null && pm.getInTime() != null) ||
@@ -172,7 +172,7 @@ public class MatchService implements IMatchService {
                     )
                     .forEach(pm -> pm.setInTime(newStart));
             playerMatchRepository.saveAll(players);
-            log.info("Logger: Players match updated successfully.");
+            log.info("Players match updated successfully.");
         }
 
         return matchMapper.toDTO(match);

@@ -41,7 +41,7 @@ public class PlayerStatisticController {
             @RequestParam(value = "search", required = false) String search,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        log.info("Logger: Request to get all players statistics with search: {}", search);
+        log.info("Request to get all players statistics with search: {}", search);
 
         if (principal == null || principal.getRole() == UserRole.ADMIN) {
             return ResponseEntity.ok(playerStatisticService.search(search));

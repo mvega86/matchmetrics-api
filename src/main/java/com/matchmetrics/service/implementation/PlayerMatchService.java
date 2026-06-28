@@ -141,12 +141,12 @@ public class PlayerMatchService implements IPlayerMatchService {
     public PlayerMatchDTO updatePlayerMatch(PlayerMatchDTO playerMatchDTO) {
         PlayerMatch existing = playerMatchRepository.findById(playerMatchDTO.getId())
                 .orElseThrow(() -> {
-                    log.error("Logger: PlayerMatch id not found: {}", playerMatchDTO.getId());
+                    log.error("PlayerMatch id not found: {}", playerMatchDTO.getId());
                     return new EntityNotFoundException("PlayerMatch not found");
                 });
 
         boolean positionOnly = Boolean.TRUE.equals(playerMatchDTO.getFieldPositionOnly());
-        log.info("Logger: Updating playerMatch ID: {} | DTO fieldPosition='{}' battingOrder={} fieldPositionOnly={}",
+        log.info("Updating playerMatch ID: {} | DTO fieldPosition='{}' battingOrder={} fieldPositionOnly={}",
             playerMatchDTO.getId(), playerMatchDTO.getFieldPosition(), playerMatchDTO.getBattingOrder(), positionOnly);
 
         existing.setFieldPosition(playerMatchDTO.getFieldPosition());
@@ -157,7 +157,7 @@ public class PlayerMatchService implements IPlayerMatchService {
         }
 
         playerMatchRepository.save(existing);
-        log.info("Logger: After save, ID: {} | fieldPosition='{}' battingOrder={}",
+        log.info("After save, ID: {} | fieldPosition='{}' battingOrder={}",
             existing.getId(), existing.getFieldPosition(), existing.getBattingOrder());
         return playerMatchMapper.toDTO(existing);
     }

@@ -45,7 +45,7 @@ public class PlayerMatchController {
             @RequestParam(value = "search", required = false) String search,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        log.info("Logger: Request to get all players match with search: {}", search);
+        log.info("Request to get all players match with search: {}", search);
 
         if (principal == null || principal.getRole() == UserRole.ADMIN) {
             return ResponseEntity.ok(playerMatchService.search(search));
@@ -79,7 +79,7 @@ public class PlayerMatchController {
                 matchDTO.getAwayTeam() != null ? matchDTO.getAwayTeam().getId() : null
         );
 
-        log.info("Logger: Assigning player {} to match {}", dto.getPlayer().getId(), dto.getMatch().getId());
+        log.info("Assigning player {} to match {}", dto.getPlayer().getId(), dto.getMatch().getId());
         PlayerMatchDTO saved = playerMatchService.save(dto);
 
         Map<String, Object> response = new HashMap<>();
@@ -94,7 +94,7 @@ public class PlayerMatchController {
             @PathVariable Long id,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        log.info("Logger: Request to fetch player match with ID: {}", id);
+        log.info("Request to fetch player match with ID: {}", id);
 
         PlayerMatchDTO playerMatchDTO = playerMatchService.getById(id);
 
@@ -127,7 +127,7 @@ public class PlayerMatchController {
                 playerMatchDTO.getPlayer() != null ? playerMatchDTO.getPlayer().getTeamId() : null
         );
 
-        log.info("Logger: Request to update playerMatch, ID: {}", playerMatchDTO.getId());
+        log.info("Request to update playerMatch, ID: {}", playerMatchDTO.getId());
         PlayerMatchDTO playerMatchDTO1 = playerMatchService.updatePlayerMatch(playerMatchDTO);
 
         return ResponseEntity.ok(Map.of(
@@ -148,7 +148,7 @@ public class PlayerMatchController {
                 playerMatchDTO.getPlayer() != null ? playerMatchDTO.getPlayer().getTeamId() : null
         );
 
-        log.debug("Logger: Request received to delete player match with ID: {}", id);
+        log.debug("Request received to delete player match with ID: {}", id);
         playerMatchService.delete(id);
 
         return ResponseEntity.noContent().build();
