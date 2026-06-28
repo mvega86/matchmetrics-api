@@ -12,6 +12,8 @@ import com.matchmetrics.persistence.repository.TeamRepository;
 import com.matchmetrics.service.IMatchService;
 import com.matchmetrics.service.IPlayerMatchService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -115,6 +117,46 @@ public class MatchService implements IMatchService {
         log.info("Searching all matches...");
         return matchRepository.findAllByOrderByStartFirstTimeAsc()
                 .stream().map(matchMapper::toDTO).toList();
+    }
+
+    @Override
+    public Page<MatchDTO> searchPage(String search, Pageable pageable) {
+        if (search != null && search.startsWith("sport:")) {
+            String sportStr = search.split(":", 2)[1].trim().toUpperCase();
+            try {
+                var sportType = com.matchmetrics.domain.enums.SportType.valueOf(sportStr);
+                return matchRepository.findBySportTypeOrderByStartFirstTimeAsc(sportType, pageable)
+                        .map(matchMapper::toDTO);
+            } catch (IllegalArgumentException e) {
+                return Page.empty(pageable);
+            }
+        }
+        if (search != null && search.startsWith("team:")) {
+            Long teamId;
+            try {
+                teamId = Long.parseLong(search.split(":", 2)[1].trim());
+            } catch (NumberFormatException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID inválido en búsqueda");
+            }
+            return matchRepository.findByHomeTeamIdOrAwayTeamIdOrderByStartFirstTimeAsc(teamId, teamId, pageable)
+                    .map(matchMapper::toDTO);
+        }
+        if (search != null && search.startsWith("tournament:")) {
+            Long tournamentId;
+            try {
+                tournamentId = Long.parseLong(search.split(":", 2)[1].trim());
+            } catch (NumberFormatException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID inválido en búsqueda");
+            }
+            return matchRepository.findByTournamentIdOrderByStartFirstTimeAsc(tournamentId, pageable)
+                    .map(matchMapper::toDTO);
+        }
+        if ("friendly".equalsIgnoreCase(search)) {
+            return matchRepository.findByTournamentIsNullOrderByStartFirstTimeAsc(pageable)
+                    .map(matchMapper::toDTO);
+        }
+        return matchRepository.findAllByOrderByStartFirstTimeAsc(pageable)
+                .map(matchMapper::toDTO);
     }
 
     @Override

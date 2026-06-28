@@ -3,6 +3,8 @@ package com.matchmetrics.persistence.repository;
 import com.matchmetrics.domain.enums.MatchState;
 import com.matchmetrics.domain.enums.SportType;
 import com.matchmetrics.persistence.entity.Match;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -21,6 +23,13 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
     List<Match> findByTournamentIsNullOrderByStartFirstTimeAsc();
 
     List<Match> findBySportTypeOrderByStartFirstTimeAsc(SportType sportType);
+
+    // ── Pageable variants ─────────────────────────────────────────────────────
+    Page<Match> findAllByOrderByStartFirstTimeAsc(Pageable pageable);
+    Page<Match> findByHomeTeamIdOrAwayTeamIdOrderByStartFirstTimeAsc(Long homeTeamId, Long awayTeamId, Pageable pageable);
+    Page<Match> findByTournamentIdOrderByStartFirstTimeAsc(Long tournamentId, Pageable pageable);
+    Page<Match> findByTournamentIsNullOrderByStartFirstTimeAsc(Pageable pageable);
+    Page<Match> findBySportTypeOrderByStartFirstTimeAsc(SportType sportType, Pageable pageable);
 
     // ── Stats aggregation queries ─────────────────────────────────────────────
 

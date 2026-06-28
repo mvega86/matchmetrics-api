@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import com.matchmetrics.mapper.dto.ApiResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 
 import java.util.List;
 
@@ -32,21 +35,22 @@ public class PlayerController {
     }
 
     @GetMapping
-    public ResponseEntity<List<PlayerDTO>> getAll(
+    public ResponseEntity<Page<PlayerDTO>> getAll(
             @RequestParam(value = "search", required = false) String search,
+            @PageableDefault(size = 1000, sort = "fullName") Pageable pageable,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         log.info("Request to get all players with search: {}", search);
 
         if (principal == null || principal.getRole() == UserRole.ADMIN) {
-            return ResponseEntity.ok(playerService.searchPlayers(search));
+            return ResponseEntity.ok(playerService.searchPlayersPage(search, pageable));
         }
 
         if (principal.getTeamId() == null) {
             return ResponseEntity.status(403).build();
         }
 
-        return ResponseEntity.ok(playerService.searchPlayersByTeam(search, principal.getTeamId()));
+        return ResponseEntity.ok(playerService.searchPlayersByTeamPage(search, principal.getTeamId(), pageable));
     }
 
     @GetMapping("/{id}")
