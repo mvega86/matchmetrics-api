@@ -31,4 +31,16 @@ public class PlayerStatisticsSummaryDTO {
     private String obp;
     private String slg;
     private String ops;
+    // Pitching
+    private int pitchingAppearances;
+    private int pitchingWins;
+    private int pitchingLosses;
+    private int pitchingSaves;
+    private String ip;
+    private int pitchingStrikeouts;
+    private int pitchingWalks;
+    private int hitsAllowed;
+    private int earnedRuns;
+    private String era;
+    private String whip;
 }

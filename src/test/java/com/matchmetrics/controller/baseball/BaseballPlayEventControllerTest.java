@@ -167,10 +167,16 @@ class BaseballPlayEventControllerTest {
     // -------------------------
 
     @Test
-    void getAll_ShouldBePublic_WhenNotAuthenticated() throws Exception {
+    void getAll_ShouldBePublic_WhenNotAuthenticatedAndMatchFilterProvided() throws Exception {
         when(playEventService.search(any())).thenReturn(Collections.emptyList());
-        mockMvc.perform(get("/api/v1/baseball/play-events"))
+        mockMvc.perform(get("/api/v1/baseball/play-events").param("search", "match:1"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void getAll_ShouldReturn400_WhenNotAuthenticatedAndNoMatchFilter() throws Exception {
+        mockMvc.perform(get("/api/v1/baseball/play-events"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -228,7 +234,7 @@ class BaseballPlayEventControllerTest {
         mockMvc.perform(put("/api/v1/baseball/play-events/1")
                         .with(user(principal(UserRole.USER, 1L)))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
+                        .content(objectMapper.writeValueAsString(sampleEventDTO())))
                 .andExpect(status().isForbidden());
     }
 
@@ -237,7 +243,7 @@ class BaseballPlayEventControllerTest {
         mockMvc.perform(put("/api/v1/baseball/play-events/1")
                         .with(user(principal(UserRole.MANAGER, 3L)))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
+                        .content(objectMapper.writeValueAsString(sampleEventDTO())))
                 .andExpect(status().isForbidden());
     }
 
@@ -250,7 +256,7 @@ class BaseballPlayEventControllerTest {
         mockMvc.perform(put("/api/v1/baseball/play-events/1")
                         .with(user(principal(UserRole.MANAGER, 1L)))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
+                        .content(objectMapper.writeValueAsString(sampleEventDTO())))
                 .andExpect(status().isOk());
     }
 
@@ -263,7 +269,7 @@ class BaseballPlayEventControllerTest {
         mockMvc.perform(put("/api/v1/baseball/play-events/1")
                         .with(user(principal(UserRole.ADMIN, null)))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
+                        .content(objectMapper.writeValueAsString(sampleEventDTO())))
                 .andExpect(status().isOk());
     }
 

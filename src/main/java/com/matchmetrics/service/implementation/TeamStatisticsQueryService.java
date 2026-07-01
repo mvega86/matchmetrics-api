@@ -9,11 +9,13 @@ import com.matchmetrics.persistence.repository.MatchRepository;
 import com.matchmetrics.service.ITeamStatisticsQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class TeamStatisticsQueryService implements ITeamStatisticsQueryService {
 
     private final MatchRepository matchRepo;

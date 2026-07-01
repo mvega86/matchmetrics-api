@@ -28,4 +28,16 @@ public enum BaseballEventType {
     COMMENT("Comment");
 
     private final String description;
+
+    public boolean isHit() {
+        return this == SINGLE || this == DOUBLE || this == TRIPLE || this == HOME_RUN;
+    }
+
+    public boolean isAtBat() {
+        return switch (this) {
+            case SINGLE, DOUBLE, TRIPLE, HOME_RUN,
+                 STRIKEOUT, OUT, DOUBLE_PLAY, TRIPLE_PLAY, ERROR -> true;
+            default -> false;
+        };
+    }
 }

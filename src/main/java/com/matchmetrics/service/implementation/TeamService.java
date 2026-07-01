@@ -77,7 +77,7 @@ public class TeamService implements ITeamService {
                     return new EntityNotFoundException("Team with ID " + id + " was not found.");
                 });
         log.info("Team found: {}...", team.getName());
-        return teamRepository.findById(id).map(teamMapper::toDTO).orElse(null);
+        return teamMapper.toDTO(team);
     }
 
     @Override

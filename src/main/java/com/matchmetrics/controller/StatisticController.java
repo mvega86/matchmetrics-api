@@ -7,8 +7,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.matchmetrics.mapper.dto.ApiResponse;
+
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @RestController
@@ -22,14 +23,11 @@ public class StatisticController {
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, Object>> createStatistic(@Valid @RequestBody StatisticDTO statisticDTO) {
+    public ResponseEntity<ApiResponse<StatisticDTO>> createStatistic(@Valid @RequestBody StatisticDTO statisticDTO) {
         log.info("Request received to save statistic: {}", statisticDTO.getName());
         StatisticDTO saved = statisticService.createStatistic(statisticDTO);
         log.info("Successfully saved statistic!!!");
-        return ResponseEntity.ok(Map.of(
-                "message", "Successfully saved statistic!!!",
-                "data", saved
-        ));
+        return ResponseEntity.ok(ApiResponse.ok("Successfully saved statistic!!!", saved));
     }
 
     @GetMapping
@@ -41,14 +39,11 @@ public class StatisticController {
     }
 
     @PutMapping
-    public ResponseEntity<Map<String, Object>> updateStatistic(@Valid @RequestBody StatisticDTO statisticDTO) {
+    public ResponseEntity<ApiResponse<StatisticDTO>> updateStatistic(@Valid @RequestBody StatisticDTO statisticDTO) {
         log.info("Request to update statistic...");
         StatisticDTO statisticDTOOut = statisticService.updateStatistic(statisticDTO);
         log.info("Successfully updated statistic!!!");
-        return ResponseEntity.ok(Map.of(
-                "message", "Successfully updated statistic!!!",
-                "data", statisticDTOOut
-        ));
+        return ResponseEntity.ok(ApiResponse.ok("Successfully updated statistic!!!", statisticDTOOut));
     }
 
     @DeleteMapping("/{id}")

@@ -1,5 +1,6 @@
 package com.matchmetrics.service.implementation;
 
+import com.matchmetrics.exception.ConflictException;
 import com.matchmetrics.exception.EntityNotFoundException;
 import com.matchmetrics.mapper.dto.PlayerMatchDTO;
 import com.matchmetrics.mapper.PlayerMatchMapper;
@@ -12,7 +13,9 @@ import com.matchmetrics.persistence.repository.PlayerRepository;
 import com.matchmetrics.persistence.repository.TeamRepository;
 import com.matchmetrics.service.IPlayerMatchService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -41,7 +44,12 @@ public class PlayerMatchService implements IPlayerMatchService {
     @Override
     public List<PlayerMatchDTO> search(String search) {
         if (search != null && search.startsWith("match:")) {
-            Long matchId = Long.parseLong(search.split(":")[1]);
+            Long matchId;
+            try {
+                matchId = Long.parseLong(search.split(":", 2)[1].trim());
+            } catch (NumberFormatException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID inválido en búsqueda");
+            }
             log.info("Searching players by {}...", search);
             return playerMatchRepository.findByMatchId(matchId)
                     .stream()
@@ -58,7 +66,12 @@ public class PlayerMatchService implements IPlayerMatchService {
     @Override
     public List<PlayerMatchDTO> searchByTeam(String search, Long teamId) {
         if (search != null && search.startsWith("match:")) {
-            Long matchId = Long.parseLong(search.split(":", 2)[1]);
+            Long matchId;
+            try {
+                matchId = Long.parseLong(search.split(":", 2)[1].trim());
+            } catch (NumberFormatException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID inválido en búsqueda");
+            }
 
             log.info("Searching player matches by match {} and authenticated team {}", matchId, teamId);
 
@@ -97,7 +110,7 @@ public class PlayerMatchService implements IPlayerMatchService {
         Optional<PlayerMatch> existing = playerMatchRepository.findByMatchIdAndPlayerId(matchId, playerId);
         if (existing.isPresent()) {
             log.error("Player {} is already assigned to match {}", playerId, matchId);
-            throw new RuntimeException("Player is already assigned to this match.");
+            throw new ConflictException("Player is already assigned to this match.");
         }
 
         try {
@@ -128,12 +141,12 @@ public class PlayerMatchService implements IPlayerMatchService {
     public PlayerMatchDTO updatePlayerMatch(PlayerMatchDTO playerMatchDTO) {
         PlayerMatch existing = playerMatchRepository.findById(playerMatchDTO.getId())
                 .orElseThrow(() -> {
-                    log.error("Logger: PlayerMatch id not found: {}", playerMatchDTO.getId());
+                    log.error("PlayerMatch id not found: {}", playerMatchDTO.getId());
                     return new EntityNotFoundException("PlayerMatch not found");
                 });
 
         boolean positionOnly = Boolean.TRUE.equals(playerMatchDTO.getFieldPositionOnly());
-        log.info("Logger: Updating playerMatch ID: {} | DTO fieldPosition='{}' battingOrder={} fieldPositionOnly={}",
+        log.info("Updating playerMatch ID: {} | DTO fieldPosition='{}' battingOrder={} fieldPositionOnly={}",
             playerMatchDTO.getId(), playerMatchDTO.getFieldPosition(), playerMatchDTO.getBattingOrder(), positionOnly);
 
         existing.setFieldPosition(playerMatchDTO.getFieldPosition());
@@ -144,7 +157,7 @@ public class PlayerMatchService implements IPlayerMatchService {
         }
 
         playerMatchRepository.save(existing);
-        log.info("Logger: After save, ID: {} | fieldPosition='{}' battingOrder={}",
+        log.info("After save, ID: {} | fieldPosition='{}' battingOrder={}",
             existing.getId(), existing.getFieldPosition(), existing.getBattingOrder());
         return playerMatchMapper.toDTO(existing);
     }

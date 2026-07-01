@@ -147,7 +147,7 @@ class SoftballGameStateControllerTest {
         mockMvc.perform(put("/api/v1/softball/game-state/1")
                         .with(user(principal(UserRole.MANAGER, 2L)))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
+                        .content(objectMapper.writeValueAsString(sampleDTO())))
                 .andExpect(status().isOk());
     }
 

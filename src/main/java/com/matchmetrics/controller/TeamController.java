@@ -11,12 +11,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
-import java.util.List;
-import java.util.Map;
+import com.matchmetrics.mapper.dto.ApiResponse;
 
-// =========================
-// CONTROLADOR TeamController
-// =========================
+import java.util.List;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/teams")
@@ -54,13 +52,10 @@ public class TeamController {
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, Object>> save(@Valid @RequestBody TeamDTO teamDTO) {
+    public ResponseEntity<ApiResponse<TeamDTO>> save(@Valid @RequestBody TeamDTO teamDTO) {
         log.info("Request received to save team: {}", teamDTO.getName());
         TeamDTO saved = teamService.save(teamDTO);
-        return ResponseEntity.ok(Map.of(
-                "message", "Successfully saved team!!!",
-                "data", saved
-        ));
+        return ResponseEntity.ok(ApiResponse.ok("Successfully saved team!!!", saved));
     }
 
     @DeleteMapping("/{id}")
@@ -71,13 +66,10 @@ public class TeamController {
     }
 
     @PutMapping
-    public ResponseEntity<Map<String, Object>> update(@Valid @RequestBody TeamDTO teamDTO) {
+    public ResponseEntity<ApiResponse<TeamDTO>> update(@Valid @RequestBody TeamDTO teamDTO) {
         log.info("Request to update team...");
         TeamDTO teamDTOOut = teamService.updateTeam(teamDTO);
         log.info("Team updated.");
-        return ResponseEntity.ok(Map.of(
-                "message", "Successfully updated team!!!",
-                "data", teamDTOOut
-        ));
+        return ResponseEntity.ok(ApiResponse.ok("Successfully updated team!!!", teamDTOOut));
     }
 }

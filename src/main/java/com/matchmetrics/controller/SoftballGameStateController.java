@@ -13,7 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
+import com.matchmetrics.mapper.dto.ApiResponse;
 
 record PitcherTrackingRequest(
     Long incomingPitcherPlayerMatchId,
@@ -41,13 +41,13 @@ public class SoftballGameStateController {
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, Object>> save(
+    public ResponseEntity<ApiResponse<BaseballGameStateDTO>> save(
             @Valid @RequestBody BaseballGameStateDTO dto,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         log.info("Request to save softball game state for match: {}", dto.getMatchId());
 
-        if (principal.getRole() != UserRole.ADMIN && principal.getRole() != UserRole.MANAGER) {
+        if (principal == null || (principal.getRole() != UserRole.ADMIN && principal.getRole() != UserRole.MANAGER)) {
             return ResponseEntity.status(403).build();
         }
 
@@ -58,16 +58,8 @@ public class SoftballGameStateController {
                 match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
         );
 
-        try {
-            BaseballGameStateDTO created = gameStateService.createGameState(dto);
-            return ResponseEntity.ok(Map.of(
-                    "message", "Softball game state saved successfully",
-                    "data", created
-            ));
-        } catch (Exception e) {
-            log.error("Error saving softball game state: {}", e.getMessage());
-            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
-        }
+        BaseballGameStateDTO created = gameStateService.createGameState(dto);
+        return ResponseEntity.ok(ApiResponse.ok("Softball game state saved successfully", created));
     }
 
     @GetMapping("/{matchId}")
@@ -77,31 +69,27 @@ public class SoftballGameStateController {
     ) {
         log.info("Request to get softball game state for match: {}", matchId);
 
-        MatchDTO match = matchService.getMatchById(matchId);
-        teamAccessValidator.validateAnyTeamOrAdmin(
-                principal,
-                match.getHomeTeam() != null ? match.getHomeTeam().getId() : null,
-                match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
-        );
-
-        try {
-            BaseballGameStateDTO gameState = gameStateService.getGameStateByMatchId(matchId);
-            return ResponseEntity.ok(gameState);
-        } catch (Exception e) {
-            log.error("Error retrieving softball game state: {}", e.getMessage());
-            return ResponseEntity.status(404).build();
+        if (principal != null) {
+            MatchDTO match = matchService.getMatchById(matchId);
+            teamAccessValidator.validateAnyTeamOrAdmin(
+                    principal,
+                    match.getHomeTeam() != null ? match.getHomeTeam().getId() : null,
+                    match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
+            );
         }
+
+        return ResponseEntity.ok(gameStateService.getGameStateByMatchId(matchId));
     }
 
     @PutMapping("/{matchId}")
-    public ResponseEntity<Map<String, Object>> update(
+    public ResponseEntity<ApiResponse<BaseballGameStateDTO>> update(
             @PathVariable Long matchId,
-            @RequestBody BaseballGameStateDTO dto,
+            @Valid @RequestBody BaseballGameStateDTO dto,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         log.info("Request to update softball game state for match: {}", matchId);
 
-        if (principal.getRole() != UserRole.ADMIN && principal.getRole() != UserRole.MANAGER) {
+        if (principal == null || (principal.getRole() != UserRole.ADMIN && principal.getRole() != UserRole.MANAGER)) {
             return ResponseEntity.status(403).build();
         }
 
@@ -112,22 +100,14 @@ public class SoftballGameStateController {
                 match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
         );
 
-        try {
-            BaseballGameStateDTO updated = gameStateService.updateGameState(matchId, dto);
-            return ResponseEntity.ok(Map.of(
-                    "message", "Softball game state updated successfully",
-                    "data", updated
-            ));
-        } catch (Exception e) {
-            log.error("Error updating softball game state: {}", e.getMessage());
-            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
-        }
+        BaseballGameStateDTO updated = gameStateService.updateGameState(matchId, dto);
+        return ResponseEntity.ok(ApiResponse.ok("Softball game state updated successfully", updated));
     }
 
     @PutMapping("/{matchId}/pitcher")
-    public ResponseEntity<Map<String, Object>> updatePitcherTracking(
+    public ResponseEntity<ApiResponse<BaseballGameStateDTO>> updatePitcherTracking(
             @PathVariable Long matchId,
-            @RequestBody PitcherTrackingRequest req,
+            @Valid @RequestBody PitcherTrackingRequest req,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         log.info("Request to update pitcher tracking for match: {}", matchId);
@@ -136,31 +116,30 @@ public class SoftballGameStateController {
             return ResponseEntity.status(403).build();
         }
 
-        try {
-            BaseballGameStateDTO updated = gameStateService.updatePitcherTracking(
-                    matchId,
-                    req.incomingPitcherPlayerMatchId(),
-                    req.outgoingPitcherPlayerMatchId(),
-                    req.outgoingPitchCount()
-            );
-            return ResponseEntity.ok(Map.of(
-                    "message", "Pitcher tracking updated successfully",
-                    "data", updated
-            ));
-        } catch (Exception e) {
-            log.error("Error updating pitcher tracking: {}", e.getMessage());
-            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
-        }
+        MatchDTO match = matchService.getMatchById(matchId);
+        teamAccessValidator.validateAnyTeamOrAdmin(
+                principal,
+                match.getHomeTeam() != null ? match.getHomeTeam().getId() : null,
+                match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
+        );
+
+        BaseballGameStateDTO updated = gameStateService.updatePitcherTracking(
+                matchId,
+                req.incomingPitcherPlayerMatchId(),
+                req.outgoingPitcherPlayerMatchId(),
+                req.outgoingPitchCount()
+        );
+        return ResponseEntity.ok(ApiResponse.ok("Pitcher tracking updated successfully", updated));
     }
 
     @PostMapping("/{matchId}/rebuild")
-    public ResponseEntity<Map<String, Object>> rebuild(
+    public ResponseEntity<ApiResponse<BaseballGameStateDTO>> rebuild(
             @PathVariable Long matchId,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         log.info("Request to rebuild softball game state from events for match: {}", matchId);
 
-        if (principal.getRole() != UserRole.ADMIN && principal.getRole() != UserRole.MANAGER) {
+        if (principal == null || (principal.getRole() != UserRole.ADMIN && principal.getRole() != UserRole.MANAGER)) {
             return ResponseEntity.status(403).build();
         }
 
@@ -171,16 +150,8 @@ public class SoftballGameStateController {
                 match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
         );
 
-        try {
-            BaseballGameStateDTO rebuilt = gameStateService.rebuildGameStateFromEvents(matchId);
-            return ResponseEntity.ok(Map.of(
-                    "message", "Softball game state rebuilt from events successfully",
-                    "data", rebuilt
-            ));
-        } catch (Exception e) {
-            log.error("Error rebuilding softball game state: {}", e.getMessage());
-            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
-        }
+        BaseballGameStateDTO rebuilt = gameStateService.rebuildGameStateFromEvents(matchId);
+        return ResponseEntity.ok(ApiResponse.ok("Softball game state rebuilt from events successfully", rebuilt));
     }
 
     @DeleteMapping("/{matchId}")
@@ -194,12 +165,7 @@ public class SoftballGameStateController {
             return ResponseEntity.status(403).build();
         }
 
-        try {
-            gameStateService.deleteGameState(matchId);
-            return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            log.error("Error deleting softball game state: {}", e.getMessage());
-            return ResponseEntity.status(400).build();
-        }
+        gameStateService.deleteGameState(matchId);
+        return ResponseEntity.noContent().build();
     }
 }

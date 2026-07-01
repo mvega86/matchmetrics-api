@@ -1,5 +1,6 @@
 package com.matchmetrics.service.implementation;
 
+import com.matchmetrics.exception.ConflictException;
 import com.matchmetrics.exception.EntityNotFoundException;
 import com.matchmetrics.mapper.MatchMapper;
 import com.matchmetrics.mapper.dto.MatchDTO;
@@ -11,8 +12,12 @@ import com.matchmetrics.persistence.repository.TeamRepository;
 import com.matchmetrics.service.IMatchService;
 import com.matchmetrics.service.IPlayerMatchService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,41 +32,41 @@ public class MatchService implements IMatchService {
     private final IPlayerMatchService playerMatchService;
     private final PlayerMatchRepository playerMatchRepository;
 
-    public MatchService(MatchRepository matchRepository, TeamRepository teamRepository, MatchMapper matchMapper, PlayerMatchRepository playerMatchRepository, IPlayerMatchService playerMatchService, PlayerMatchRepository playerMatchRepository1) {
+    public MatchService(MatchRepository matchRepository, TeamRepository teamRepository, MatchMapper matchMapper, PlayerMatchRepository playerMatchRepository, IPlayerMatchService playerMatchService) {
         this.matchRepository = matchRepository;
         this.teamRepository = teamRepository;
         this.matchMapper = matchMapper;
         this.playerMatchService = playerMatchService;
-        this.playerMatchRepository = playerMatchRepository1;
+        this.playerMatchRepository = playerMatchRepository;
     }
 
     @Override
     @Transactional
     public MatchDTO createMatch(MatchDTO matchDTO) {
-        log.info("Logger: Creating match...");
+        log.info("Creating match...");
         teamRepository.findById(matchDTO.getHomeTeam().getId())
                 .orElseThrow(() -> {
-                    log.error("Logger: Home team, with id {}, not found", matchDTO.getHomeTeam().getId());
+                    log.error("Home team, with id {}, not found", matchDTO.getHomeTeam().getId());
                     return new EntityNotFoundException("Home team not found");
                 });
         teamRepository.findById(matchDTO.getAwayTeam().getId())
                 .orElseThrow(() -> {
-                    log.error("Logger: Away team, with id {}, not found", matchDTO.getAwayTeam().getId());
+                    log.error("Away team, with id {}, not found", matchDTO.getAwayTeam().getId());
                     return new EntityNotFoundException("Away team not found");
                 });
 
         if (matchDTO.getHomeTeam().getId().equals(matchDTO.getAwayTeam().getId())) {
-            log.error("Logger: The home and away teams cannot be the same.");
+            log.error("The home and away teams cannot be the same.");
             throw new IllegalArgumentException("The home and away teams cannot be the same.");
         }
 
         try {
             Match match = matchMapper.toEntity(matchDTO);
             match = matchRepository.save(match);
-            log.info("Logger: Match created successfully");
+            log.info("Match created successfully");
             return matchMapper.toDTO(match);
         }catch (Exception e){
-            log.error("Logger: Error creating match: {}", e.getMessage());
+            log.error("Error creating match: {}", e.getMessage());
             throw new RuntimeException("Error creating match.");
         }
     }
@@ -80,14 +85,24 @@ public class MatchService implements IMatchService {
         }
 
         if (search != null && search.startsWith("team:")) {
-            Long teamId = Long.parseLong(search.split(":", 2)[1]);
+            Long teamId;
+            try {
+                teamId = Long.parseLong(search.split(":", 2)[1].trim());
+            } catch (NumberFormatException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID inválido en búsqueda");
+            }
             log.info("Searching matches by team: {}", teamId);
             return matchRepository.findByHomeTeamIdOrAwayTeamIdOrderByStartFirstTimeAsc(teamId, teamId)
                     .stream().map(matchMapper::toDTO).toList();
         }
 
         if (search != null && search.startsWith("tournament:")) {
-            Long tournamentId = Long.parseLong(search.split(":", 2)[1].trim());
+            Long tournamentId;
+            try {
+                tournamentId = Long.parseLong(search.split(":", 2)[1].trim());
+            } catch (NumberFormatException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID inválido en búsqueda");
+            }
             log.info("Searching matches by tournament: {}", tournamentId);
             return matchRepository.findByTournamentIdOrderByStartFirstTimeAsc(tournamentId)
                     .stream().map(matchMapper::toDTO).toList();
@@ -105,6 +120,46 @@ public class MatchService implements IMatchService {
     }
 
     @Override
+    public Page<MatchDTO> searchPage(String search, Pageable pageable) {
+        if (search != null && search.startsWith("sport:")) {
+            String sportStr = search.split(":", 2)[1].trim().toUpperCase();
+            try {
+                var sportType = com.matchmetrics.domain.enums.SportType.valueOf(sportStr);
+                return matchRepository.findBySportTypeOrderByStartFirstTimeAsc(sportType, pageable)
+                        .map(matchMapper::toDTO);
+            } catch (IllegalArgumentException e) {
+                return Page.empty(pageable);
+            }
+        }
+        if (search != null && search.startsWith("team:")) {
+            Long teamId;
+            try {
+                teamId = Long.parseLong(search.split(":", 2)[1].trim());
+            } catch (NumberFormatException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID inválido en búsqueda");
+            }
+            return matchRepository.findByHomeTeamIdOrAwayTeamIdOrderByStartFirstTimeAsc(teamId, teamId, pageable)
+                    .map(matchMapper::toDTO);
+        }
+        if (search != null && search.startsWith("tournament:")) {
+            Long tournamentId;
+            try {
+                tournamentId = Long.parseLong(search.split(":", 2)[1].trim());
+            } catch (NumberFormatException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID inválido en búsqueda");
+            }
+            return matchRepository.findByTournamentIdOrderByStartFirstTimeAsc(tournamentId, pageable)
+                    .map(matchMapper::toDTO);
+        }
+        if ("friendly".equalsIgnoreCase(search)) {
+            return matchRepository.findByTournamentIsNullOrderByStartFirstTimeAsc(pageable)
+                    .map(matchMapper::toDTO);
+        }
+        return matchRepository.findAllByOrderByStartFirstTimeAsc(pageable)
+                .map(matchMapper::toDTO);
+    }
+
+    @Override
     public List<MatchDTO> searchByTeam(String search, Long teamId) {
         log.info("Searching matches for authenticated team: {}", teamId);
 
@@ -117,13 +172,13 @@ public class MatchService implements IMatchService {
 
     @Override
     public MatchDTO getMatchById(Long matchId) {
-        log.info("Logger: Searching match with id {}...", matchId);
+        log.info("Searching match with id {}...", matchId);
         Match match = matchRepository.findById(matchId)
                 .orElseThrow(() -> {
-                    log.error("Logger: Match with ID {} not found", matchId);
+                    log.error("Match with ID {} not found", matchId);
                     return new EntityNotFoundException("Match not found");
                 });
-        log.info("Logger: Match found: {}", match.getHomeTeam().getAcronym()+" - "+match.getAwayTeam().getAcronym());
+        log.info("Match found: {}", match.getHomeTeam().getAcronym()+" - "+match.getAwayTeam().getAcronym());
         return matchMapper.toDTO(match);
     }
 
@@ -143,15 +198,15 @@ public class MatchService implements IMatchService {
 
         List<PlayerMatch> players = existing.getPlayerMatches();
 
-        log.info("Logger: Updating match times for match ID: {}", matchDTO.getId());
+        log.info("Updating match times for match ID: {}", matchDTO.getId());
 
         Match match = matchMapper.toEntity(matchDTO);
         match.setPlayerMatches(existing.getPlayerMatches());
         matchRepository.save(match);
-        log.info("Logger: Match times updated.");
+        log.info("Match times updated.");
 
         if (newStart != null && (oldStart == null || !oldStart.equals(newStart))) {
-            log.info("Logger: Updating players match intime field...");
+            log.info("Updating players match intime field...");
             players.stream()
                     .filter(pm ->
                             (oldStart == null && pm.getInTime() != null) ||
@@ -159,7 +214,7 @@ public class MatchService implements IMatchService {
                     )
                     .forEach(pm -> pm.setInTime(newStart));
             playerMatchRepository.saveAll(players);
-            log.info("Logger: Players match updated successfully.");
+            log.info("Players match updated successfully.");
         }
 
         return matchMapper.toDTO(match);
@@ -178,7 +233,7 @@ public class MatchService implements IMatchService {
                 .orElseThrow(() -> new EntityNotFoundException("PlayerMatch not found"));
 
         if (!playerMatch.getPlayerStatistics().isEmpty()) {
-            throw new IllegalStateException("Cannot delete PlayerMatch with associated statistics");
+            throw new ConflictException("Cannot delete PlayerMatch with associated statistics");
         }*/
         try {
             matchRepository.deleteById(id);

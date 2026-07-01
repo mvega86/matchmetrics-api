@@ -14,14 +14,17 @@ import com.matchmetrics.persistence.entity.Team;
 import com.matchmetrics.persistence.repository.BaseballPlayEventRepository;
 import com.matchmetrics.persistence.repository.PlayerRepository;
 import com.matchmetrics.service.IPlayerStatisticsQueryService;
+import com.matchmetrics.service.stats.StatsCalculator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class PlayerStatisticsQueryService implements IPlayerStatisticsQueryService {
 
     private final BaseballPlayEventRepository eventRepo;
@@ -42,17 +45,16 @@ public class PlayerStatisticsQueryService implements IPlayerStatisticsQueryServi
 
     @Override
     public List<PlayerStatisticsSummaryDTO> getPlayerStatsList(SportType sportType, Long teamId, Long tournamentId) {
-        List<BaseballPlayEvent> battingEvents = tournamentId != null
-                ? eventRepo.findAllBattingEventsBySportTypeAndTournament(sportType, tournamentId)
-                : eventRepo.findAllBattingEventsBySportType(sportType);
-
+        // Filter by team at SQL level to avoid loading all events into memory.
+        List<BaseballPlayEvent> battingEvents;
         if (teamId != null) {
-            battingEvents = battingEvents.stream()
-                    .filter(e -> {
-                        Team t = e.getBatterPlayerMatch().getPlayer().getTeam();
-                        return t != null && teamId.equals(t.getId());
-                    })
-                    .collect(Collectors.toList());
+            battingEvents = tournamentId != null
+                    ? eventRepo.findAllBattingEventsBySportTypeAndTournamentAndTeam(sportType, tournamentId, teamId)
+                    : eventRepo.findAllBattingEventsBySportTypeAndTeam(sportType, teamId);
+        } else {
+            battingEvents = tournamentId != null
+                    ? eventRepo.findAllBattingEventsBySportTypeAndTournament(sportType, tournamentId)
+                    : eventRepo.findAllBattingEventsBySportType(sportType);
         }
 
         Map<Long, List<BaseballPlayEvent>> byPlayer = battingEvents.stream()
@@ -89,9 +91,9 @@ public class PlayerStatisticsQueryService implements IPlayerStatisticsQueryServi
             int rbi        = events.stream().mapToInt(e -> e.getRbi() != null ? e.getRbi() : 0).sum();
             int ab         = (int) events.stream().filter(e -> AT_BAT_TYPES.contains(e.getEventType())).count();
 
-            double avgVal = ab > 0 ? (double) hits / ab : 0.0;
-            double obpVal = obp(hits, bb, hbp, ab, sacFly);
-            double slgVal = ab > 0 ? (double) totalBases(singles, doubles, triples, homeRuns) / ab : 0.0;
+            double avgVal = StatsCalculator.avg(hits, ab);
+            double obpVal = StatsCalculator.obp(hits, bb, hbp, ab, sacFly);
+            double slgVal = StatsCalculator.slg(singles, doubles, triples, homeRuns, ab);
             double opsVal = obpVal + slgVal;
 
             PlayerStatisticsSummaryDTO dto = new PlayerStatisticsSummaryDTO();
@@ -116,10 +118,31 @@ public class PlayerStatisticsQueryService implements IPlayerStatisticsQueryServi
             dto.setRbi(rbi);
             dto.setWalks(bb);
             dto.setStrikeouts(strikeouts);
-            dto.setAvg(formatAvg(avgVal));
-            dto.setObp(formatAvg(obpVal));
-            dto.setSlg(formatAvg(slgVal));
-            dto.setOps(formatAvg(opsVal));
+            dto.setAvg(StatsCalculator.formatAvg(avgVal));
+            dto.setObp(StatsCalculator.formatAvg(obpVal));
+            dto.setSlg(StatsCalculator.formatAvg(slgVal));
+            dto.setOps(StatsCalculator.formatAvg(opsVal));
+
+            // Pitching
+            List<BaseballPlayEvent> pEvents = pitchingByPlayer.getOrDefault(playerId, Collections.emptyList());
+            int totalOuts   = pEvents.stream().mapToInt(StatsCalculator::outsFromEvent).sum();
+            double ipDec    = totalOuts / 3.0;
+            int pitchingK   = count(pEvents, BaseballEventType.STRIKEOUT);
+            int pitchingBB  = count(pEvents, BaseballEventType.WALK);
+            int hAllowed    = (int) pEvents.stream().filter(e -> HIT_TYPES.contains(e.getEventType())).count();
+            int earnedRuns  = pEvents.stream().mapToInt(e -> e.getRunsScored() != null ? e.getRunsScored() : 0).sum();
+            int appearances = (int) pEvents.stream().map(e -> e.getMatch().getId()).distinct().count();
+            double eraMultiplier = sportType == SportType.SOFTBALL ? 7.0 : 9.0;
+
+            dto.setPitchingAppearances(appearances);
+            dto.setIp(StatsCalculator.formatIp(totalOuts));
+            dto.setPitchingStrikeouts(pitchingK);
+            dto.setPitchingWalks(pitchingBB);
+            dto.setHitsAllowed(hAllowed);
+            dto.setEarnedRuns(earnedRuns);
+            dto.setEra(StatsCalculator.formatEra(StatsCalculator.era(earnedRuns, ipDec, eraMultiplier)));
+            dto.setWhip(StatsCalculator.formatEra(StatsCalculator.whip(hAllowed, pitchingBB, ipDec)));
+
             result.add(dto);
         }
 
@@ -212,8 +235,8 @@ public class PlayerStatisticsQueryService implements IPlayerStatisticsQueryServi
         int rbi        = batting.stream().mapToInt(e -> e.getRbi() != null ? e.getRbi() : 0).sum();
         int ab         = (int) batting.stream().filter(e -> AT_BAT_TYPES.contains(e.getEventType())).count();
 
-        double obpVal = obp(hits, bb, hbp, ab, sacFly);
-        double slgVal = ab > 0 ? (double) totalBases(singles, doubles, triples, homeRuns) / ab : 0.0;
+        double obpVal = StatsCalculator.obp(hits, bb, hbp, ab, sacFly);
+        double slgVal = StatsCalculator.slg(singles, doubles, triples, homeRuns, ab);
 
         dto.setAb(ab);
         dto.setHits(hits);
@@ -226,30 +249,28 @@ public class PlayerStatisticsQueryService implements IPlayerStatisticsQueryServi
         dto.setHitByPitch(hbp);
         dto.setStrikeouts(strikeouts);
         dto.setStolenBases(stolenBases);
-        dto.setAvg(formatAvg(ab > 0 ? (double) hits / ab : 0.0));
-        dto.setObp(formatAvg(obpVal));
-        dto.setSlg(formatAvg(slgVal));
-        dto.setOps(formatAvg(obpVal + slgVal));
+        dto.setAvg(StatsCalculator.formatAvg(StatsCalculator.avg(hits, ab)));
+        dto.setObp(StatsCalculator.formatAvg(obpVal));
+        dto.setSlg(StatsCalculator.formatAvg(slgVal));
+        dto.setOps(StatsCalculator.formatAvg(obpVal + slgVal));
 
-        int totalOuts  = pitching.stream().mapToInt(this::outsFromEvent).sum();
+        int totalOuts  = pitching.stream().mapToInt(StatsCalculator::outsFromEvent).sum();
         double ipDec   = totalOuts / 3.0;
         int pitchingK  = count(pitching, BaseballEventType.STRIKEOUT);
         int pitchingBB = count(pitching, BaseballEventType.WALK);
         int hAllowed   = (int) pitching.stream().filter(e -> HIT_TYPES.contains(e.getEventType())).count();
         int earnedRuns = pitching.stream().mapToInt(e -> e.getRunsScored() != null ? e.getRunsScored() : 0).sum();
         int appearances = (int) pitching.stream().map(e -> e.getMatch().getId()).distinct().count();
-
-        // ERA multiplier: 7 innings for Softball, 9 for other sports (SOFTBALL_RULES.md §18)
         double eraMultiplier = sportType == SportType.SOFTBALL ? 7.0 : 9.0;
 
         dto.setPitchingAppearances(appearances);
-        dto.setIp(formatIp(totalOuts));
+        dto.setIp(StatsCalculator.formatIp(totalOuts));
         dto.setPitchingStrikeouts(pitchingK);
         dto.setPitchingWalks(pitchingBB);
         dto.setHitsAllowed(hAllowed);
         dto.setEarnedRuns(earnedRuns);
-        dto.setEra(ipDec > 0 ? formatEra(earnedRuns * eraMultiplier / ipDec) : "0.00");
-        dto.setWhip(ipDec > 0 ? formatEra((hAllowed + pitchingBB) / ipDec) : "0.00");
+        dto.setEra(StatsCalculator.formatEra(StatsCalculator.era(earnedRuns, ipDec, eraMultiplier)));
+        dto.setWhip(StatsCalculator.formatEra(StatsCalculator.whip(hAllowed, pitchingBB, ipDec)));
         return dto;
     }
 
@@ -257,32 +278,5 @@ public class PlayerStatisticsQueryService implements IPlayerStatisticsQueryServi
 
     private int count(List<BaseballPlayEvent> events, BaseballEventType type) {
         return (int) events.stream().filter(e -> e.getEventType() == type).count();
-    }
-
-    private int totalBases(int s, int d, int t, int hr) { return s + 2 * d + 3 * t + 4 * hr; }
-
-    private double obp(int h, int bb, int hbp, int ab, int sf) {
-        int denom = ab + bb + hbp + sf;
-        return denom > 0 ? (double) (h + bb + hbp) / denom : 0.0;
-    }
-
-    private String formatAvg(double val) {
-        if (val >= 1.0) return String.format("%.3f", val);
-        String s = String.format("%.3f", val);
-        return s.startsWith("0.") ? s.substring(1) : s;
-    }
-
-    private String formatEra(double val) { return String.format("%.2f", val); }
-    private String formatIp(int outs) { return (outs / 3) + "." + (outs % 3); }
-
-    private int outsFromEvent(BaseballPlayEvent e) {
-        int recorded = e.getOutsOnPlay() != null ? e.getOutsOnPlay() : 0;
-        if (recorded > 0) return recorded;
-        return switch (e.getEventType()) {
-            case STRIKEOUT, OUT, CAUGHT_STEALING -> 1;
-            case DOUBLE_PLAY -> 2;
-            case TRIPLE_PLAY -> 3;
-            default -> 0;
-        };
     }
 }

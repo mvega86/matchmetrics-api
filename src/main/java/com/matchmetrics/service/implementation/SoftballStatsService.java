@@ -9,6 +9,7 @@ import com.matchmetrics.persistence.entity.PlayerMatch;
 import com.matchmetrics.persistence.repository.BaseballPlayEventRepository;
 import com.matchmetrics.persistence.repository.PlayerMatchRepository;
 import com.matchmetrics.service.ISoftballStatsService;
+import com.matchmetrics.service.stats.StatsCalculator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -83,20 +84,20 @@ public class SoftballStatsService implements ISoftballStatsService {
         int ab         = (int) battingEvents.stream().filter(e -> AT_BAT_TYPES.contains(e.getEventType())).count();
 
         int stolenBases = count(battingEvents, BaseballEventType.STOLEN_BASE);
-        double obpVal   = obp(hits, bb, hbp, ab, sacFly);
-        double slgVal   = ab > 0 ? (double) totalBases(singles, doubles, triples, homeRuns) / ab : 0.0;
+        double obpVal   = StatsCalculator.obp(hits, bb, hbp, ab, sacFly);
+        double slgVal   = StatsCalculator.slg(singles, doubles, triples, homeRuns, ab);
 
         dto.setAb(ab);           dto.setHits(hits);       dto.setSingles(singles);
         dto.setDoubles(doubles); dto.setTriples(triples);  dto.setHomeRuns(homeRuns);
         dto.setRbi(rbi);         dto.setWalks(bb);         dto.setHitByPitch(hbp);
         dto.setStrikeouts(strikeouts); dto.setStolenBases(stolenBases);
-        dto.setAvg(formatAvg(ab > 0 ? (double) hits / ab : 0.0));
-        dto.setObp(formatAvg(obpVal));
-        dto.setSlg(formatAvg(slgVal));
-        dto.setOps(formatAvg(obpVal + slgVal));
+        dto.setAvg(StatsCalculator.formatAvg(StatsCalculator.avg(hits, ab)));
+        dto.setObp(StatsCalculator.formatAvg(obpVal));
+        dto.setSlg(StatsCalculator.formatAvg(slgVal));
+        dto.setOps(StatsCalculator.formatAvg(obpVal + slgVal));
 
         // ── Pitching ─────────────────────────────────────────────────────────
-        int totalOuts   = pitchingEvents.stream().mapToInt(this::outsFromEvent).sum();
+        int totalOuts   = pitchingEvents.stream().mapToInt(StatsCalculator::outsFromEvent).sum();
         double ipDec    = totalOuts / 3.0;
         int pitchingK   = count(pitchingEvents, BaseballEventType.STRIKEOUT);
         int pitchingBB  = count(pitchingEvents, BaseballEventType.WALK);
@@ -108,11 +109,11 @@ public class SoftballStatsService implements ISoftballStatsService {
 
         dto.setPitchingAppearances(appearances);
         dto.setWins(wls[0]);   dto.setLosses(wls[1]); dto.setSaves(wls[2]);
-        dto.setIp(formatIp(totalOuts));
+        dto.setIp(StatsCalculator.formatIp(totalOuts));
         dto.setPitchingStrikeouts(pitchingK); dto.setPitchingWalks(pitchingBB);
         dto.setHitsAllowed(hitsAllowed);      dto.setEarnedRuns(earnedRuns);
-        dto.setEra(ipDec > 0 ? formatEra(earnedRuns * 7.0 / ipDec) : "0.00");
-        dto.setWhip(ipDec > 0 ? formatEra((hitsAllowed + pitchingBB) / ipDec) : "0.00");
+        dto.setEra(StatsCalculator.formatEra(StatsCalculator.era(earnedRuns, ipDec, 7.0)));
+        dto.setWhip(StatsCalculator.formatEra(StatsCalculator.whip(hitsAllowed, pitchingBB, ipDec)));
 
         return dto;
     }
@@ -322,7 +323,7 @@ public class SoftballStatsService implements ISoftballStatsService {
             if (e.getFieldingTeam() == null) continue;
             if (closerId.equals(effectivePitcher[i])
                     && winnerTeamId.equals(e.getFieldingTeam().getId())) {
-                outsRecorded += outsFromEvent(e);
+                outsRecorded += StatsCalculator.outsFromEvent(e);
             }
         }
         return outsRecorded >= 9;
@@ -335,36 +336,9 @@ public class SoftballStatsService implements ISoftballStatsService {
                 .orElseThrow(() -> new IllegalArgumentException("PlayerMatch not found: " + playerMatchId));
     }
 
-    private int outsFromEvent(BaseballPlayEvent e) {
-        int recorded = e.getOutsOnPlay() != null ? e.getOutsOnPlay() : 0;
-        if (recorded > 0) return recorded;
-        return switch (e.getEventType()) {
-            case STRIKEOUT, OUT, CAUGHT_STEALING -> 1;
-            case DOUBLE_PLAY -> 2;
-            case TRIPLE_PLAY -> 3;
-            default -> 0;
-        };
-    }
-
     private int count(List<BaseballPlayEvent> events, BaseballEventType type) {
         return (int) events.stream().filter(e -> e.getEventType() == type).count();
     }
-
-    private int totalBases(int s, int d, int t, int hr) { return s + 2 * d + 3 * t + 4 * hr; }
-
-    private double obp(int h, int bb, int hbp, int ab, int sf) {
-        int denom = ab + bb + hbp + sf;
-        return denom > 0 ? (double) (h + bb + hbp) / denom : 0.0;
-    }
-
-    private String formatAvg(double val) {
-        if (val >= 1.0) return String.format("%.3f", val);
-        String s = String.format("%.3f", val);
-        return s.startsWith("0.") ? s.substring(1) : s;
-    }
-
-    private String formatEra(double val) { return String.format("%.2f", val); }
-    private String formatIp(int outs)    { return (outs / 3) + "." + (outs % 3); }
 
     private TournamentPlayerStatsDTO emptyStats() {
         TournamentPlayerStatsDTO dto = new TournamentPlayerStatsDTO();

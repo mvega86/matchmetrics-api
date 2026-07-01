@@ -1,6 +1,7 @@
 package com.matchmetrics.service.implementation;
 
 import com.matchmetrics.domain.enums.SportType;
+import com.matchmetrics.exception.ConflictException;
 import com.matchmetrics.exception.EntityNotFoundException;
 import com.matchmetrics.mapper.StatisticMapper;
 import com.matchmetrics.mapper.dto.StatisticDTO;
@@ -31,7 +32,7 @@ public class StatisticService implements IStatisticService {
     public StatisticDTO createStatistic(StatisticDTO statisticDTO) {
         SportType sport = statisticDTO.getSportType() != null ? statisticDTO.getSportType() : SportType.FOOTBALL;
         if (statisticRepository.existsByNameAndSportType(statisticDTO.getName(), sport)) {
-            throw new RuntimeException("Statistic with name '" + statisticDTO.getName() + "' already exists for sport " + sport + ".");
+            throw new ConflictException("Statistic with name '" + statisticDTO.getName() + "' already exists for sport " + sport + ".");
         }
 
         Statistic statistic = statisticMapper.toEntity(statisticDTO);

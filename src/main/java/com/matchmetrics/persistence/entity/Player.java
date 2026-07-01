@@ -42,7 +42,7 @@ public class Player extends AuditModel {
     @JsonBackReference
     private Team team;
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "player_teams",
         joinColumns = @JoinColumn(name = "player_id"),
@@ -55,5 +55,8 @@ public class Player extends AuditModel {
 
     @Column(name = "field_position", length = 5)
     private String fieldPosition;
+
+    @Column(name = "identification_number", length = 50)
+    private String identificationNumber;
 
 }

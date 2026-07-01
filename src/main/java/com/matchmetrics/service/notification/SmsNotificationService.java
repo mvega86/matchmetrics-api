@@ -44,7 +44,8 @@ public class SmsNotificationService {
 
     public void send(String phone, String userName, String code) {
         if (!smsEnabled) {
-            log.warn("[SMS-STUB] SMS no configurado — código para {}: {}", phone, code);
+            log.warn("[SMS-STUB] SMS deshabilitado. El código NO fue enviado a {}. " +
+                     "Activa SMS_ENABLED=true y configura las credenciales Twilio.", phone);
             return;
         }
         // TODO: integrate Twilio

@@ -3,6 +3,7 @@ package com.matchmetrics.controller;
 import com.matchmetrics.mapper.dto.MatchDTO;
 import com.matchmetrics.mapper.dto.PlayerDTO;
 import com.matchmetrics.mapper.dto.PlayerMatchDTO;
+import com.matchmetrics.mapper.dto.PlayerMatchPublicDTO;
 import com.matchmetrics.service.IMatchService;
 import com.matchmetrics.service.IPlayerMatchService;
 import com.matchmetrics.domain.enums.UserRole;
@@ -16,9 +17,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
-import java.util.HashMap;
+import com.matchmetrics.mapper.dto.ApiResponse;
+
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/players-match")
@@ -41,13 +42,24 @@ public class PlayerMatchController {
     }
 
     @GetMapping
-    public ResponseEntity<List<PlayerMatchDTO>> getAll(
+    public ResponseEntity<?> getAll(
             @RequestParam(value = "search", required = false) String search,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        log.info("Logger: Request to get all players match with search: {}", search);
+        log.info("Request to get all players match with search: {}", search);
 
-        if (principal == null || principal.getRole() == UserRole.ADMIN) {
+        if (principal == null) {
+            if (search == null || !search.startsWith("match:")) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.ok("Filter 'match:<id>' is required for public access", null));
+            }
+            List<PlayerMatchPublicDTO> publicList = playerMatchService.search(search).stream()
+                    .map(PlayerMatchPublicDTO::from)
+                    .toList();
+            return ResponseEntity.ok(publicList);
+        }
+
+        if (principal.getRole() == UserRole.ADMIN) {
             return ResponseEntity.ok(playerMatchService.search(search));
         }
 
@@ -61,7 +73,7 @@ public class PlayerMatchController {
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, Object>> save(
+    public ResponseEntity<ApiResponse<PlayerMatchDTO>> save(
             @Valid @RequestBody PlayerMatchDTO dto,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
@@ -79,14 +91,10 @@ public class PlayerMatchController {
                 matchDTO.getAwayTeam() != null ? matchDTO.getAwayTeam().getId() : null
         );
 
-        log.info("Logger: Assigning player {} to match {}", dto.getPlayer().getId(), dto.getMatch().getId());
+        log.info("Assigning player {} to match {}", dto.getPlayer().getId(), dto.getMatch().getId());
         PlayerMatchDTO saved = playerMatchService.save(dto);
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "Player match assigned successfully");
-        response.put("data", saved);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.ok("Player match assigned successfully", saved));
     }
 
     @GetMapping("/{id}")
@@ -94,7 +102,7 @@ public class PlayerMatchController {
             @PathVariable Long id,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        log.info("Logger: Request to fetch player match with ID: {}", id);
+        log.info("Request to fetch player match with ID: {}", id);
 
         PlayerMatchDTO playerMatchDTO = playerMatchService.getById(id);
 
@@ -111,8 +119,8 @@ public class PlayerMatchController {
     }
 
     @PutMapping()
-    public ResponseEntity<Map<String, Object>> update(
-            @RequestBody PlayerMatchDTO playerMatchDTO,
+    public ResponseEntity<ApiResponse<PlayerMatchDTO>> update(
+            @Valid @RequestBody PlayerMatchDTO playerMatchDTO,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         PlayerMatchDTO currentPlayerMatch = playerMatchService.getById(playerMatchDTO.getId());
@@ -127,13 +135,10 @@ public class PlayerMatchController {
                 playerMatchDTO.getPlayer() != null ? playerMatchDTO.getPlayer().getTeamId() : null
         );
 
-        log.info("Logger: Request to update playerMatch, ID: {}", playerMatchDTO.getId());
+        log.info("Request to update playerMatch, ID: {}", playerMatchDTO.getId());
         PlayerMatchDTO playerMatchDTO1 = playerMatchService.updatePlayerMatch(playerMatchDTO);
 
-        return ResponseEntity.ok(Map.of(
-                "message", "Player match updated successfully!!!",
-                "data", playerMatchDTO1
-        ));
+        return ResponseEntity.ok(ApiResponse.ok("Player match updated successfully!!!", playerMatchDTO1));
     }
 
     @DeleteMapping("/{id}")
@@ -148,7 +153,7 @@ public class PlayerMatchController {
                 playerMatchDTO.getPlayer() != null ? playerMatchDTO.getPlayer().getTeamId() : null
         );
 
-        log.debug("Logger: Request received to delete player match with ID: {}", id);
+        log.debug("Request received to delete player match with ID: {}", id);
         playerMatchService.delete(id);
 
         return ResponseEntity.noContent().build();

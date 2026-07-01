@@ -5,6 +5,7 @@ import com.matchmetrics.domain.enums.BaseballGameStatus;
 import com.matchmetrics.domain.enums.InningHalf;
 import com.matchmetrics.domain.enums.MatchState;
 import com.matchmetrics.domain.enums.SportType;
+import com.matchmetrics.exception.ConflictException;
 import com.matchmetrics.exception.EntityNotFoundException;
 import com.matchmetrics.mapper.BaseballGameStateMapper;
 import com.matchmetrics.mapper.dto.BaseballGameStateDTO;
@@ -20,6 +21,8 @@ import com.matchmetrics.persistence.repository.PitcherPitchCountRepository;
 import com.matchmetrics.persistence.repository.PlayerMatchRepository;
 import com.matchmetrics.service.IBaseballGameStateService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -63,12 +66,13 @@ public class BaseballGameStateService implements IBaseballGameStateService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "gameState", key = "#dto.matchId")
     public BaseballGameStateDTO createGameState(BaseballGameStateDTO dto) {
         log.info("Creating baseball game state for match: {}", dto.getMatchId());
 
         if (gameStateRepository.existsByMatchId(dto.getMatchId())) {
             log.error("Game state already exists for match: {}", dto.getMatchId());
-            throw new IllegalArgumentException("Game state already exists for this match");
+            throw new ConflictException("Game state already exists for this match");
         }
 
         try {
@@ -86,6 +90,7 @@ public class BaseballGameStateService implements IBaseballGameStateService {
     }
 
     @Override
+    @Cacheable(value = "gameState", key = "#matchId")
     public BaseballGameStateDTO getGameStateByMatchId(Long matchId) {
         log.info("Retrieving game state for match: {}", matchId);
         BaseballGameState gameState = gameStateRepository.findByMatchId(matchId)
@@ -98,6 +103,7 @@ public class BaseballGameStateService implements IBaseballGameStateService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "gameState", key = "#matchId")
     public BaseballGameStateDTO updateGameState(Long matchId, BaseballGameStateDTO dto) {
         log.info("Updating game state for match: {}", matchId);
         BaseballGameState gameState = getGameStateEntity(matchId);
@@ -234,6 +240,7 @@ public class BaseballGameStateService implements IBaseballGameStateService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "gameState", key = "#matchId")
     public BaseballGameStateDTO updateInning(Long matchId, Integer inning) {
         log.info("Updating inning for match: {} to inning: {}", matchId, inning);
         BaseballGameState gameState = getGameStateEntity(matchId);
@@ -244,6 +251,7 @@ public class BaseballGameStateService implements IBaseballGameStateService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "gameState", key = "#matchId")
     public BaseballGameStateDTO updateInningHalf(Long matchId, String inningHalf) {
         log.info("Updating inning half for match: {} to: {}", matchId, inningHalf);
         BaseballGameState gameState = getGameStateEntity(matchId);
@@ -254,6 +262,7 @@ public class BaseballGameStateService implements IBaseballGameStateService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "gameState", key = "#matchId")
     public BaseballGameStateDTO updateOuts(Long matchId, Integer outs) {
         log.info("Updating outs for match: {} to: {}", matchId, outs);
         if (outs < 0 || outs > 2) {
@@ -268,6 +277,7 @@ public class BaseballGameStateService implements IBaseballGameStateService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "gameState", key = "#matchId")
     public BaseballGameStateDTO updateBalls(Long matchId, Integer balls) {
         log.info("Updating balls for match: {} to: {}", matchId, balls);
         if (balls < 0 || balls > 3) {
@@ -282,6 +292,7 @@ public class BaseballGameStateService implements IBaseballGameStateService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "gameState", key = "#matchId")
     public BaseballGameStateDTO updateStrikes(Long matchId, Integer strikes) {
         log.info("Updating strikes for match: {} to: {}", matchId, strikes);
         if (strikes < 0 || strikes > 2) {
@@ -296,6 +307,7 @@ public class BaseballGameStateService implements IBaseballGameStateService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "gameState", key = "#matchId")
     public BaseballGameStateDTO updateBases(Long matchId, Long firstBasePlayerId, Long secondBasePlayerId, Long thirdBasePlayerId) {
         log.info("Updating bases for match: {}", matchId);
         BaseballGameState gameState = getGameStateEntity(matchId);
@@ -319,6 +331,7 @@ public class BaseballGameStateService implements IBaseballGameStateService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "gameState", key = "#matchId")
     public BaseballGameStateDTO updateScore(Long matchId, Integer homeScore, Integer awayScore) {
         log.info("Updating score for match: {} - Home: {}, Away: {}", matchId, homeScore, awayScore);
         BaseballGameState gameState = getGameStateEntity(matchId);
@@ -330,6 +343,7 @@ public class BaseballGameStateService implements IBaseballGameStateService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "gameState", key = "#matchId")
     public BaseballGameStateDTO finishGame(Long matchId) {
         log.info("Finishing game for match: {}", matchId);
         BaseballGameState gameState = getGameStateEntity(matchId);
@@ -445,8 +459,19 @@ public class BaseballGameStateService implements IBaseballGameStateService {
             || type == BaseballEventType.SACRIFICE_BUNT;
     }
 
+    // Default outs recorded by each event type when outsOnPlay is not explicitly set.
+    private int defaultOutsForEvent(BaseballEventType type) {
+        return switch (type) {
+            case STRIKEOUT, OUT, SACRIFICE_FLY, SACRIFICE_BUNT, CAUGHT_STEALING -> 1;
+            case DOUBLE_PLAY -> 2;
+            case TRIPLE_PLAY -> 3;
+            default -> 0; // hits, walks, HBP, stolen base, etc.
+        };
+    }
+
     @Override
     @Transactional
+    @CacheEvict(value = "gameState", key = "#matchId")
     public BaseballGameStateDTO rebuildGameStateFromEvents(Long matchId) {
         log.info("Rebuilding game state from events for match: {}", matchId);
         BaseballGameState gameState = getGameStateEntity(matchId);
@@ -469,17 +494,18 @@ public class BaseballGameStateService implements IBaseballGameStateService {
         gameState.setAwayScore(Math.max(0, awayScore));
         gameState.setHomeScore(Math.max(0, homeScore));
 
-        // Reconstruct inning / outs from at-bat-ending events (not needed for FINISHED games)
+        // Reconstruct inning / outs from events (not needed for FINISHED games).
+        // Uses defaultOutsForEvent so that CAUGHT_STEALING and other non-AT_BAT events with
+        // explicit outs are counted, while hits/walks (which never record outs) are skipped.
         if (gameState.getStatus() != BaseballGameStatus.FINISHED) {
             int currentInning = 1;
             InningHalf currentHalf = InningHalf.TOP;
             int currentOuts = 0;
 
             for (BaseballPlayEvent ev : events) {
-                if (!AT_BAT_ENDING.contains(ev.getEventType())) continue;
-                int outs = ev.getOutsOnPlay() != null ? ev.getOutsOnPlay() : 0;
-                if (outs <= 0) outs = 1; // every at-bat-ending event with no explicit outs still counts as 1
-                currentOuts += outs;
+                int outsOnPlay = ev.getOutsOnPlay() != null ? ev.getOutsOnPlay() : defaultOutsForEvent(ev.getEventType());
+                if (outsOnPlay <= 0) continue;
+                currentOuts += outsOnPlay;
                 if (currentOuts >= 3) {
                     currentOuts = 0;
                     if (currentHalf == InningHalf.TOP) {
@@ -509,6 +535,7 @@ public class BaseballGameStateService implements IBaseballGameStateService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "gameState", key = "#matchId")
     public void deleteGameState(Long matchId) {
         log.info("Deleting game state for match: {}", matchId);
         BaseballGameState gameState = getGameStateEntity(matchId);
@@ -518,6 +545,7 @@ public class BaseballGameStateService implements IBaseballGameStateService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "gameState", key = "#matchId")
     public BaseballGameStateDTO updatePitcherTracking(Long matchId,
                                                        Long incomingPitcherPMId,
                                                        Long outgoingPitcherPMId,

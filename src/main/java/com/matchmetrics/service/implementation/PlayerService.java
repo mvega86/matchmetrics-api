@@ -10,8 +10,13 @@ import com.matchmetrics.persistence.repository.TeamRepository;
 import com.matchmetrics.service.IPlayerService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -68,7 +73,12 @@ public class PlayerService implements IPlayerService {
             }
         }
         if (search != null && search.startsWith("team:")) {
-            Long teamId = Long.parseLong(search.split(":")[1]);
+            Long teamId;
+            try {
+                teamId = Long.parseLong(search.split(":", 2)[1].trim());
+            } catch (NumberFormatException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID inválido en búsqueda");
+            }
             log.info("Searching players by {}...", search);
             return playerRepository.findByTeamIdOrderByFullNameAsc(teamId)
                     .stream()
@@ -155,5 +165,40 @@ public class PlayerService implements IPlayerService {
                 .stream()
                 .map(playerMapper::toDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<PlayerDTO> searchPlayersPage(String search, Pageable pageable) {
+        if (search != null && search.startsWith("sport:")) {
+            String sportStr = search.split(":", 2)[1].trim().toUpperCase();
+            try {
+                var sportType = com.matchmetrics.domain.enums.SportType.valueOf(sportStr);
+                return playerRepository.findByTeamsSportTypeOrderByFullNameAsc(sportType, pageable)
+                        .map(playerMapper::toDTO);
+            } catch (IllegalArgumentException e) {
+                return Page.empty(pageable);
+            }
+        }
+        if (search != null && search.startsWith("team:")) {
+            Long teamId;
+            try {
+                teamId = Long.parseLong(search.split(":", 2)[1].trim());
+            } catch (NumberFormatException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID inválido en búsqueda");
+            }
+            return playerRepository.findByTeamIdOrderByFullNameAsc(teamId, pageable)
+                    .map(playerMapper::toDTO);
+        }
+        return playerRepository.findAllByOrderByUpdatedAtDesc(pageable)
+                .map(playerMapper::toDTO);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<PlayerDTO> searchPlayersByTeamPage(String search, Long teamId, Pageable pageable) {
+        log.info("Searching players (pageable) for team: {}", teamId);
+        return playerRepository.findByTeamIdOrderByFullNameAsc(teamId, pageable)
+                .map(playerMapper::toDTO);
     }
 }

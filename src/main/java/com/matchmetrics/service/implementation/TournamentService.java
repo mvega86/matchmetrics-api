@@ -3,6 +3,7 @@ package com.matchmetrics.service.implementation;
 import com.matchmetrics.domain.enums.MatchPhase;
 import com.matchmetrics.domain.enums.MatchState;
 import com.matchmetrics.exception.EntityNotFoundException;
+import com.matchmetrics.exception.ValidationException;
 import com.matchmetrics.mapper.MatchMapper;
 import com.matchmetrics.mapper.TeamMapper;
 import com.matchmetrics.mapper.TournamentMapper;
@@ -169,7 +170,7 @@ public class TournamentService implements ITournamentService {
 
         List<Team> teams = tournament.getTeams();
         if (teams.size() < 2) {
-            throw new IllegalStateException("Se necesitan al menos 2 equipos para generar partidos.");
+            throw new ValidationException("Se necesitan al menos 2 equipos para generar partidos.");
         }
 
         LocalDate base = startDate != null ? startDate : LocalDate.now();
@@ -229,7 +230,7 @@ public class TournamentService implements ITournamentService {
             String[] parts = matchTime.split(":");
             return LocalTime.of(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
         } catch (Exception e) {
-            return LocalTime.of(15, 0);
+            throw new IllegalArgumentException("Formato de hora inválido: '" + matchTime + "'. Use HH:mm");
         }
     }
 }

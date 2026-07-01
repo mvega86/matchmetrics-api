@@ -2,6 +2,7 @@ package com.matchmetrics.service.implementation;
 
 import com.matchmetrics.domain.enums.MatchState;
 import com.matchmetrics.exception.EntityNotFoundException;
+import com.matchmetrics.exception.ValidationException;
 import com.matchmetrics.mapper.BaseballPlayEventMapper;
 import com.matchmetrics.mapper.dto.BaseballPlayEventDTO;
 import com.matchmetrics.persistence.entity.BaseballPlayEvent;
@@ -50,7 +51,7 @@ public class BaseballPlayEventService implements IBaseballPlayEventService {
         Match match = matchRepository.findById(dto.getMatchId())
                 .orElseThrow(() -> new EntityNotFoundException("Match not found: " + dto.getMatchId()));
         if (match.getState() == MatchState.FINISHED) {
-            throw new IllegalStateException("Cannot register events on a finished match.");
+            throw new ValidationException("Cannot register events on a finished match.");
         }
 
         if (dto.getBatterPlayerMatchId() != null &&

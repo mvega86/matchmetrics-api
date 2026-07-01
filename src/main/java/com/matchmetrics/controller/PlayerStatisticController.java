@@ -14,9 +14,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
-import java.util.HashMap;
+import com.matchmetrics.mapper.dto.ApiResponse;
+
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/player-statistics")
@@ -31,18 +31,19 @@ public class PlayerStatisticController {
         this.teamAccessValidator = teamAccessValidator;
     }
 
+    /**
+     * @deprecated Sistema A — estadísticas manuales por Statistic.
+     * Usar /api/v1/player-stats (Sistema B, derivado de BaseballPlayEvent).
+     */
+    @Deprecated
     @GetMapping
     public ResponseEntity<List<PlayerStatisticDTO>> getAll(
             @RequestParam(value = "search", required = false) String search,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        log.info("Logger: Request to get all players statistics with search: {}", search);
+        log.info("Request to get all players statistics with search: {}", search);
 
-        if (principal == null) {
-            return ResponseEntity.status(401).build();
-        }
-
-        if (principal.getRole() == UserRole.ADMIN) {
+        if (principal == null || principal.getRole() == UserRole.ADMIN) {
             return ResponseEntity.ok(playerStatisticService.search(search));
         }
 
@@ -55,8 +56,10 @@ public class PlayerStatisticController {
         );
     }
 
+    /** @deprecated Sistema A. Usar /api/v1/baseball/play-events o /api/v1/softball/play-events. */
+    @Deprecated
     @PostMapping
-    public ResponseEntity<Map<String, Object>> save(
+    public ResponseEntity<ApiResponse<PlayerStatisticDTO>> save(
             @Valid @RequestBody PlayerStatisticDTO playerStatisticDTO,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
@@ -72,13 +75,11 @@ public class PlayerStatisticController {
         log.info("Assigning statistics to players with ID: {}", playerStatisticDTO.getId());
         PlayerStatisticDTO createdStat = playerStatisticService.createPlayerStatistic(playerStatisticDTO);
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "Statistic assigned successfully!!!");
-        response.put("data", createdStat);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.ok("Statistic assigned successfully!!!", createdStat));
     }
 
+    /** @deprecated Sistema A. */
+    @Deprecated
     @GetMapping("/{id}")
     public ResponseEntity<PlayerStatisticDTO> getById(
             @PathVariable Long id,
@@ -102,9 +103,11 @@ public class PlayerStatisticController {
         return ResponseEntity.ok(playerStatisticDTO);
     }
 
+    /** @deprecated Sistema A. */
+    @Deprecated
     @PutMapping
     public ResponseEntity<PlayerStatisticDTO> update(
-            @RequestBody PlayerStatisticDTO dto,
+            @Valid @RequestBody PlayerStatisticDTO dto,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         PlayerStatisticDTO currentStatistic = playerStatisticService.getById(dto.getId());
@@ -132,6 +135,8 @@ public class PlayerStatisticController {
         return ResponseEntity.ok(updated);
     }
 
+    /** @deprecated Sistema A. */
+    @Deprecated
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @PathVariable Long id,

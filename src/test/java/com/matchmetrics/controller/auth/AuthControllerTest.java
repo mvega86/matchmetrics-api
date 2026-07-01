@@ -4,7 +4,11 @@ import com.matchmetrics.domain.enums.AuthProvider;
 import com.matchmetrics.domain.enums.UserRole;
 import com.matchmetrics.domain.enums.UserStatus;
 import com.matchmetrics.persistence.entity.AppUser;
+import com.matchmetrics.persistence.entity.UserInvitation;
 import com.matchmetrics.persistence.repository.AppUserRepository;
+import com.matchmetrics.persistence.repository.RefreshTokenRepository;
+import com.matchmetrics.persistence.repository.UserInvitationRepository;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +17,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.is;
@@ -32,15 +40,47 @@ class AuthControllerTest {
     private AppUserRepository appUserRepository;
 
     @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
+
+    @Autowired
+    private UserInvitationRepository invitationRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @BeforeEach
     void setUp() {
+        refreshTokenRepository.deleteAll();
         appUserRepository.deleteAll();
+        invitationRepository.deleteAll();
     }
 
     @Test
     void register_ShouldCreatePendingUserAndReturnToken() throws Exception {
+        String invToken = createInvitation("usuario@test.com");
+        String body = """
+                {
+                  "fullName": "Usuario Prueba",
+                  "email": "usuario@test.com",
+                  "password": "123456",
+                  "requestedTeamName": "Equipo Prueba",
+                  "invitationToken": "%s"
+                }
+                """.formatted(invToken);
+
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(cookie().exists("access_token"))
+                .andExpect(jsonPath("$.email", is("usuario@test.com")))
+                .andExpect(jsonPath("$.fullName", is("Usuario Prueba")))
+                .andExpect(jsonPath("$.role", is("USER")))
+                .andExpect(jsonPath("$.status", is("PENDING")));
+    }
+
+    @Test
+    void register_ShouldFail_WhenNoInvitationToken() throws Exception {
         String body = """
                 {
                   "fullName": "Usuario Prueba",
@@ -53,12 +93,7 @@ class AuthControllerTest {
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token", notNullValue()))
-                .andExpect(jsonPath("$.email", is("usuario@test.com")))
-                .andExpect(jsonPath("$.fullName", is("Usuario Prueba")))
-                .andExpect(jsonPath("$.role", is("USER")))
-                .andExpect(jsonPath("$.status", is("PENDING")));
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -84,43 +119,58 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(loginBody))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token", notNullValue()))
+                .andExpect(cookie().exists("access_token"))
                 .andExpect(jsonPath("$.email", is("usuario@test.com")))
                 .andExpect(jsonPath("$.status", is("APPROVED")));
     }
 
     @Test
     void register_ShouldFail_WhenEmailAlreadyExists() throws Exception {
-        String body = """
+        String invToken1 = createInvitation("usuario@test.com");
+        String body1 = """
                 {
                   "fullName": "Usuario Prueba",
                   "email": "usuario@test.com",
                   "password": "123456",
-                  "requestedTeamName": "Equipo Prueba"
+                  "requestedTeamName": "Equipo Prueba",
+                  "invitationToken": "%s"
                 }
-                """;
+                """.formatted(invToken1);
 
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(body1))
                 .andExpect(status().isOk());
 
+        String invToken2 = createInvitation("usuario@test.com");
+        String body2 = """
+                {
+                  "fullName": "Usuario Prueba",
+                  "email": "usuario@test.com",
+                  "password": "123456",
+                  "requestedTeamName": "Equipo Prueba",
+                  "invitationToken": "%s"
+                }
+                """.formatted(invToken2);
+
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isBadRequest());
+                        .content(body2))
+                .andExpect(status().isConflict());
     }
 
     @Test
     void login_ShouldFail_WhenPasswordIsWrong() throws Exception {
+        String invToken = createInvitation("usuario@test.com");
         String registerBody = """
                 {
                   "fullName": "Usuario Prueba",
                   "email": "usuario@test.com",
                   "password": "123456",
-                  "requestedTeamName": "Equipo Prueba"
+                  "requestedTeamName": "Equipo Prueba",
+                  "invitationToken": "%s"
                 }
-                """;
+                """.formatted(invToken);
 
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -142,34 +192,15 @@ class AuthControllerTest {
 
     @Test
     void me_ShouldReturnAuthenticatedUser_WhenTokenIsValid() throws Exception {
-        String registerBody = """
-            {
-              "fullName": "Usuario Prueba",
-              "email": "usuario@test.com",
-              "password": "123456",
-              "requestedTeamName": "Equipo Prueba"
-            }
-            """;
-
-        String registerResponse = mockMvc.perform(post("/api/v1/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(registerBody))
-                .andExpect(status().isOk())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-
-        String token = registerResponse
-                .split("\"token\":\"")[1]
-                .split("\"")[0];
+        String token = createApprovedUserAndGetToken();
 
         mockMvc.perform(get("/api/v1/auth/me")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email", is("usuario@test.com")))
-                .andExpect(jsonPath("$.fullName", is("Usuario Prueba")))
+                .andExpect(jsonPath("$.email", is("test@approved.com")))
+                .andExpect(jsonPath("$.fullName", is("Usuario Test")))
                 .andExpect(jsonPath("$.role", is("USER")))
-                .andExpect(jsonPath("$.status", is("PENDING")));
+                .andExpect(jsonPath("$.status", is("APPROVED")));
     }
 
     @Test
@@ -263,6 +294,15 @@ class AuthControllerTest {
 
     // ── helpers ──────────────────────────────────────────────────────────────
 
+    private String createInvitation(String email) {
+        UserInvitation inv = new UserInvitation();
+        inv.setEmail(email);
+        inv.setToken(UUID.randomUUID().toString());
+        inv.setExpiresAt(LocalDateTime.now().plusHours(24));
+        invitationRepository.save(inv);
+        return inv.getToken();
+    }
+
     private String createApprovedUserAndGetToken() throws Exception {
         AppUser user = new AppUser();
         user.setFullName("Usuario Test");
@@ -279,12 +319,13 @@ class AuthControllerTest {
                   "password": "password123"
                 }
                 """;
-        String response = mockMvc.perform(post("/api/v1/auth/login")
+        MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(loginBody))
                 .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
+                .andReturn();
 
-        return response.split("\"token\":\"")[1].split("\"")[0];
+        Cookie cookie = result.getResponse().getCookie("access_token");
+        return cookie.getValue();
     }
 }

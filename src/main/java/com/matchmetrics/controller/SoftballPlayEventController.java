@@ -1,6 +1,8 @@
 package com.matchmetrics.controller;
 
+import com.matchmetrics.domain.enums.SportType;
 import com.matchmetrics.domain.enums.UserRole;
+import com.matchmetrics.mapper.dto.ApiResponse;
 import com.matchmetrics.mapper.dto.BaseballPlayEventDTO;
 import com.matchmetrics.mapper.dto.MatchDTO;
 import com.matchmetrics.security.TeamAccessValidator;
@@ -14,7 +16,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @RestController
@@ -36,7 +37,7 @@ public class SoftballPlayEventController {
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, Object>> create(
+    public ResponseEntity<ApiResponse<BaseballPlayEventDTO>> create(
             @Valid @RequestBody BaseballPlayEventDTO dto,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
@@ -48,8 +49,8 @@ public class SoftballPlayEventController {
 
         MatchDTO match = matchService.getMatchById(dto.getMatchId());
 
-        if (match.getSportType() == null || match.getSportType() != com.matchmetrics.domain.enums.SportType.SOFTBALL) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Match " + dto.getMatchId() + " is not a SOFTBALL match"));
+        if (match.getSportType() == null || match.getSportType() != SportType.SOFTBALL) {
+            throw new IllegalArgumentException("Match " + dto.getMatchId() + " is not a SOFTBALL match");
         }
 
         teamAccessValidator.validateAnyTeamOrAdmin(
@@ -58,16 +59,8 @@ public class SoftballPlayEventController {
                 match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
         );
 
-        try {
-            BaseballPlayEventDTO created = playEventService.createPlayEvent(dto);
-            return ResponseEntity.ok(Map.of(
-                    "message", "Softball play event created successfully",
-                    "data", created
-            ));
-        } catch (Exception e) {
-            log.error("Error creating softball play event: {}", e.getMessage());
-            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
-        }
+        BaseballPlayEventDTO created = playEventService.createPlayEvent(dto);
+        return ResponseEntity.ok(ApiResponse.ok("Softball play event created successfully", created));
     }
 
     @GetMapping("/{id}")
@@ -88,19 +81,22 @@ public class SoftballPlayEventController {
     }
 
     @GetMapping
-    public ResponseEntity<List<BaseballPlayEventDTO>> getAll(
+    public ResponseEntity<?> getAll(
             @RequestParam(value = "search", required = false) String search,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         log.info("Request to list softball play events with search: {}", search);
-
+        if (principal == null && (search == null || !search.startsWith("match:"))) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.ok("Filter 'match:<id>' is required for public access", null));
+        }
         return ResponseEntity.ok(playEventService.search(search));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> update(
+    public ResponseEntity<ApiResponse<BaseballPlayEventDTO>> update(
             @PathVariable Long id,
-            @RequestBody BaseballPlayEventDTO dto,
+            @Valid @RequestBody BaseballPlayEventDTO dto,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         log.info("Request to update softball play event: {}", id);
@@ -117,16 +113,8 @@ public class SoftballPlayEventController {
                 match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
         );
 
-        try {
-            BaseballPlayEventDTO updated = playEventService.updatePlayEvent(id, dto);
-            return ResponseEntity.ok(Map.of(
-                    "message", "Softball play event updated successfully",
-                    "data", updated
-            ));
-        } catch (Exception e) {
-            log.error("Error updating softball play event {}: {}", id, e.getMessage());
-            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
-        }
+        BaseballPlayEventDTO updated = playEventService.updatePlayEvent(id, dto);
+        return ResponseEntity.ok(ApiResponse.ok("Softball play event updated successfully", updated));
     }
 
     @DeleteMapping("/match/{matchId}")
@@ -141,13 +129,8 @@ public class SoftballPlayEventController {
             return ResponseEntity.status(403).build();
         }
 
-        try {
-            playEventService.deleteAllByMatchId(matchId);
-            return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            log.error("Error deleting softball play events for match {}: {}", matchId, e.getMessage());
-            return ResponseEntity.status(400).build();
-        }
+        playEventService.deleteAllByMatchId(matchId);
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}")
@@ -169,12 +152,7 @@ public class SoftballPlayEventController {
                 match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
         );
 
-        try {
-            playEventService.deletePlayEvent(id);
-            return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            log.error("Error deleting softball play event {}: {}", id, e.getMessage());
-            return ResponseEntity.status(400).build();
-        }
+        playEventService.deletePlayEvent(id);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -1,6 +1,7 @@
 package com.matchmetrics.controller;
 
 import com.matchmetrics.mapper.dto.PlayerDTO;
+import com.matchmetrics.mapper.dto.PlayerPublicDTO;
 import com.matchmetrics.security.TeamAccessValidator;
 import com.matchmetrics.service.IPlayerService;
 import com.matchmetrics.domain.enums.UserRole;
@@ -14,12 +15,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
-import java.util.List;
-import java.util.Map;
+import com.matchmetrics.mapper.dto.ApiResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 
-// =========================
-// CONTROLADOR PlayerController
-// =========================
+import java.util.List;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/players")
@@ -34,21 +36,27 @@ public class PlayerController {
     }
 
     @GetMapping
-    public ResponseEntity<List<PlayerDTO>> getAll(
+    public ResponseEntity<?> getAll(
             @RequestParam(value = "search", required = false) String search,
+            @PageableDefault(size = 1000, sort = "fullName") Pageable pageable,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         log.info("Request to get all players with search: {}", search);
 
-        if (principal == null || principal.getRole() == UserRole.ADMIN) {
-            return ResponseEntity.ok(playerService.searchPlayers(search));
+        if (principal == null) {
+            return ResponseEntity.ok(
+                playerService.searchPlayersPage(search, pageable).map(PlayerPublicDTO::from));
+        }
+
+        if (principal.getRole() == UserRole.ADMIN) {
+            return ResponseEntity.ok(playerService.searchPlayersPage(search, pageable));
         }
 
         if (principal.getTeamId() == null) {
             return ResponseEntity.status(403).build();
         }
 
-        return ResponseEntity.ok(playerService.searchPlayersByTeam(search, principal.getTeamId()));
+        return ResponseEntity.ok(playerService.searchPlayersByTeamPage(search, principal.getTeamId(), pageable));
     }
 
     @GetMapping("/{id}")
@@ -67,7 +75,7 @@ public class PlayerController {
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, Object>> save(
+    public ResponseEntity<ApiResponse<PlayerDTO>> save(
             @Valid @RequestBody PlayerDTO playerDTO,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
@@ -79,10 +87,7 @@ public class PlayerController {
         log.info("Request received to save player: {}", playerDTO.getFullName());
         PlayerDTO saved = playerService.save(playerDTO);
 
-        return ResponseEntity.ok(Map.of(
-                "message", "Successfully saved player!!!",
-                "data", saved
-        ));
+        return ResponseEntity.ok(ApiResponse.ok("Successfully saved player!!!", saved));
     }
 
     @DeleteMapping("/{id}")
@@ -104,7 +109,7 @@ public class PlayerController {
     }
 
     @PutMapping
-    public ResponseEntity<Map<String, Object>> update(
+    public ResponseEntity<ApiResponse<PlayerDTO>> update(
             @Valid @RequestBody PlayerDTO playerDTO,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
@@ -123,9 +128,6 @@ public class PlayerController {
         log.info("Request to update player...");
         PlayerDTO playerDTOOut = playerService.updateStatistic(playerDTO);
 
-        return ResponseEntity.ok(Map.of(
-                "message", "Successfully updated player!!!",
-                "data", playerDTOOut
-        ));
+        return ResponseEntity.ok(ApiResponse.ok("Successfully updated player!!!", playerDTOOut));
     }
 }

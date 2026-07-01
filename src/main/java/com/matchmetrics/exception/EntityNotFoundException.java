@@ -1,6 +1,6 @@
 package com.matchmetrics.exception;
 
-public class EntityNotFoundException extends RuntimeException {
+public class EntityNotFoundException extends MatchMetricsException {
     public EntityNotFoundException(String message) {
         super(message);
     }

@@ -1,5 +1,6 @@
 package com.matchmetrics.controller.auth;
 
+import com.matchmetrics.domain.enums.UserStatus;
 import com.matchmetrics.mapper.dto.admin.ChangeUserRoleRequest;
 import com.matchmetrics.mapper.dto.admin.PendingUserResponse;
 import com.matchmetrics.security.UserPrincipal;
@@ -17,6 +18,13 @@ import java.util.List;
 public class AdminUserController {
 
     private final IAdminUserService adminUserService;
+
+    @GetMapping
+    public List<PendingUserResponse> getAllUsers(
+            @RequestParam(required = false) UserStatus status
+    ) {
+        return adminUserService.getAllUsers(status);
+    }
 
     @GetMapping("/pending")
     public List<PendingUserResponse> getPendingUsers() {
