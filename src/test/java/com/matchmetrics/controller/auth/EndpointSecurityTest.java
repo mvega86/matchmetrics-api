@@ -18,6 +18,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import org.springframework.data.domain.Page;
 import java.util.Collections;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -59,7 +60,7 @@ class EndpointSecurityTest {
 
     @Test
     void playersGet_ShouldBePublic_WhenUserIsNotAuthenticated() throws Exception {
-        when(playerService.searchPlayers(any())).thenReturn(Collections.emptyList());
+        when(playerService.searchPlayersPage(any(), any())).thenReturn(Page.empty());
         mockMvc.perform(get("/api/v1/players"))
                 .andExpect(status().isOk());
     }

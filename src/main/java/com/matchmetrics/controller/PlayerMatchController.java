@@ -3,6 +3,7 @@ package com.matchmetrics.controller;
 import com.matchmetrics.mapper.dto.MatchDTO;
 import com.matchmetrics.mapper.dto.PlayerDTO;
 import com.matchmetrics.mapper.dto.PlayerMatchDTO;
+import com.matchmetrics.mapper.dto.PlayerMatchPublicDTO;
 import com.matchmetrics.service.IMatchService;
 import com.matchmetrics.service.IPlayerMatchService;
 import com.matchmetrics.domain.enums.UserRole;
@@ -41,13 +42,24 @@ public class PlayerMatchController {
     }
 
     @GetMapping
-    public ResponseEntity<List<PlayerMatchDTO>> getAll(
+    public ResponseEntity<?> getAll(
             @RequestParam(value = "search", required = false) String search,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         log.info("Request to get all players match with search: {}", search);
 
-        if (principal == null || principal.getRole() == UserRole.ADMIN) {
+        if (principal == null) {
+            if (search == null || !search.startsWith("match:")) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.ok("Filter 'match:<id>' is required for public access", null));
+            }
+            List<PlayerMatchPublicDTO> publicList = playerMatchService.search(search).stream()
+                    .map(PlayerMatchPublicDTO::from)
+                    .toList();
+            return ResponseEntity.ok(publicList);
+        }
+
+        if (principal.getRole() == UserRole.ADMIN) {
             return ResponseEntity.ok(playerMatchService.search(search));
         }
 

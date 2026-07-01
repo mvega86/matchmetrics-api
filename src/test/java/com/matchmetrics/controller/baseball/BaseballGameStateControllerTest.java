@@ -187,7 +187,7 @@ class BaseballGameStateControllerTest {
         mockMvc.perform(put("/api/v1/baseball/game-state/1")
                         .with(user(principal(UserRole.USER, 1L)))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
+                        .content(objectMapper.writeValueAsString(sampleGameStateDTO())))
                 .andExpect(status().isForbidden());
     }
 
@@ -196,7 +196,7 @@ class BaseballGameStateControllerTest {
         mockMvc.perform(put("/api/v1/baseball/game-state/1")
                         .with(user(principal(UserRole.MANAGER, 3L)))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
+                        .content(objectMapper.writeValueAsString(sampleGameStateDTO())))
                 .andExpect(status().isForbidden());
     }
 
@@ -208,7 +208,7 @@ class BaseballGameStateControllerTest {
         mockMvc.perform(put("/api/v1/baseball/game-state/1")
                         .with(user(principal(UserRole.MANAGER, 1L)))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
+                        .content(objectMapper.writeValueAsString(sampleGameStateDTO())))
                 .andExpect(status().isOk());
     }
 
@@ -220,7 +220,7 @@ class BaseballGameStateControllerTest {
         mockMvc.perform(put("/api/v1/baseball/game-state/1")
                         .with(user(principal(UserRole.ADMIN, null)))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
+                        .content(objectMapper.writeValueAsString(sampleGameStateDTO())))
                 .andExpect(status().isOk());
     }
 

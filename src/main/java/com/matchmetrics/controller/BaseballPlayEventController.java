@@ -67,21 +67,27 @@ public class BaseballPlayEventController {
         log.info("Request to get play event: {}", id);
 
         BaseballPlayEventDTO event = playEventService.getPlayEventById(id);
-        MatchDTO match = matchService.getMatchById(event.getMatchId());
-        teamAccessValidator.validateAnyTeamOrAdmin(
-                principal,
-                match.getHomeTeam() != null ? match.getHomeTeam().getId() : null,
-                match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
-        );
+        if (principal != null) {
+            MatchDTO match = matchService.getMatchById(event.getMatchId());
+            teamAccessValidator.validateAnyTeamOrAdmin(
+                    principal,
+                    match.getHomeTeam() != null ? match.getHomeTeam().getId() : null,
+                    match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
+            );
+        }
         return ResponseEntity.ok(event);
     }
 
     @GetMapping
-    public ResponseEntity<List<BaseballPlayEventDTO>> getAll(
+    public ResponseEntity<?> getAll(
             @RequestParam(value = "search", required = false) String search,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         log.info("Request to list play events with search: {}", search);
+        if (principal == null && (search == null || !search.startsWith("match:"))) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.ok("Filter 'match:<id>' is required for public access", null));
+        }
         return ResponseEntity.ok(playEventService.search(search));
     }
 

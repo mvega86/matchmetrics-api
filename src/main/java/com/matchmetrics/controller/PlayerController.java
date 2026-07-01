@@ -1,6 +1,7 @@
 package com.matchmetrics.controller;
 
 import com.matchmetrics.mapper.dto.PlayerDTO;
+import com.matchmetrics.mapper.dto.PlayerPublicDTO;
 import com.matchmetrics.security.TeamAccessValidator;
 import com.matchmetrics.service.IPlayerService;
 import com.matchmetrics.domain.enums.UserRole;
@@ -35,14 +36,19 @@ public class PlayerController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<PlayerDTO>> getAll(
+    public ResponseEntity<?> getAll(
             @RequestParam(value = "search", required = false) String search,
             @PageableDefault(size = 1000, sort = "fullName") Pageable pageable,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         log.info("Request to get all players with search: {}", search);
 
-        if (principal == null || principal.getRole() == UserRole.ADMIN) {
+        if (principal == null) {
+            return ResponseEntity.ok(
+                playerService.searchPlayersPage(search, pageable).map(PlayerPublicDTO::from));
+        }
+
+        if (principal.getRole() == UserRole.ADMIN) {
             return ResponseEntity.ok(playerService.searchPlayersPage(search, pageable));
         }
 

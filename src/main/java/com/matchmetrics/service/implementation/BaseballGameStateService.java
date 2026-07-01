@@ -459,6 +459,16 @@ public class BaseballGameStateService implements IBaseballGameStateService {
             || type == BaseballEventType.SACRIFICE_BUNT;
     }
 
+    // Default outs recorded by each event type when outsOnPlay is not explicitly set.
+    private int defaultOutsForEvent(BaseballEventType type) {
+        return switch (type) {
+            case STRIKEOUT, OUT, SACRIFICE_FLY, SACRIFICE_BUNT, CAUGHT_STEALING -> 1;
+            case DOUBLE_PLAY -> 2;
+            case TRIPLE_PLAY -> 3;
+            default -> 0; // hits, walks, HBP, stolen base, etc.
+        };
+    }
+
     @Override
     @Transactional
     @CacheEvict(value = "gameState", key = "#matchId")
@@ -484,17 +494,18 @@ public class BaseballGameStateService implements IBaseballGameStateService {
         gameState.setAwayScore(Math.max(0, awayScore));
         gameState.setHomeScore(Math.max(0, homeScore));
 
-        // Reconstruct inning / outs from at-bat-ending events (not needed for FINISHED games)
+        // Reconstruct inning / outs from events (not needed for FINISHED games).
+        // Uses defaultOutsForEvent so that CAUGHT_STEALING and other non-AT_BAT events with
+        // explicit outs are counted, while hits/walks (which never record outs) are skipped.
         if (gameState.getStatus() != BaseballGameStatus.FINISHED) {
             int currentInning = 1;
             InningHalf currentHalf = InningHalf.TOP;
             int currentOuts = 0;
 
             for (BaseballPlayEvent ev : events) {
-                if (!AT_BAT_ENDING.contains(ev.getEventType())) continue;
-                int outs = ev.getOutsOnPlay() != null ? ev.getOutsOnPlay() : 0;
-                if (outs <= 0) outs = 1; // every at-bat-ending event with no explicit outs still counts as 1
-                currentOuts += outs;
+                int outsOnPlay = ev.getOutsOnPlay() != null ? ev.getOutsOnPlay() : defaultOutsForEvent(ev.getEventType());
+                if (outsOnPlay <= 0) continue;
+                currentOuts += outsOnPlay;
                 if (currentOuts >= 3) {
                     currentOuts = 0;
                     if (currentHalf == InningHalf.TOP) {

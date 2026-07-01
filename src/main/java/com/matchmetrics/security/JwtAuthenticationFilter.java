@@ -50,6 +50,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             UserPrincipal principal = (UserPrincipal) userDetails;
 
             if (jwtService.isTokenValid(token, principal.toAppUserReference())) {
+                if (!principal.isEnabled()) {
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Cuenta no activa");
+                    return;
+                }
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
                                 userDetails,

@@ -64,12 +64,14 @@ public class BaseballGameStateController {
     ) {
         log.info("Request to get game state for match: {}", matchId);
 
-        MatchDTO match = matchService.getMatchById(matchId);
-        teamAccessValidator.validateAnyTeamOrAdmin(
-                principal,
-                match.getHomeTeam() != null ? match.getHomeTeam().getId() : null,
-                match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
-        );
+        if (principal != null) {
+            MatchDTO match = matchService.getMatchById(matchId);
+            teamAccessValidator.validateAnyTeamOrAdmin(
+                    principal,
+                    match.getHomeTeam() != null ? match.getHomeTeam().getId() : null,
+                    match.getAwayTeam() != null ? match.getAwayTeam().getId() : null
+            );
+        }
 
         return ResponseEntity.ok(gameStateService.getGameStateByMatchId(matchId));
     }
